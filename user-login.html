@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Connect | User Login</title>
+  <meta name="description" content="Sign in to your Community Connect member dashboard, or create a new account.">
+  <meta name="theme-color" content="#0b2218">
+  <link rel="canonical" href="https://communityconnect.example/user-login.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Community Connect">
+  <meta property="og:title" content="Community Connect | Resident Portal">
+  <meta property="og:description" content="Sign in to post comments, RSVP for events, and stay updated with Barangay Central.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("communityTheme")==="light"?"light":"dark")}catch(e){}</script>
+</head>
+<body class="verso-auth-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <!-- ================= VERSO SIGN IN / CREATE ACCOUNT CARD ================= -->
+  <main class="auth-page-wrapper" id="mainContent" tabindex="-1">
+    <div class="verso-container">
+
+      <!-- data-mode flips between "signin" and "signup" to slide the blade -->
+      <div class="verso-card" id="versoCard" data-mode="signin">
+
+        <!-- ===== SKEWED FOREST BLADE + BRAND COPY ===== -->
+        <div class="verso-blade" aria-hidden="true">
+          <span class="verso-seam"></span>
+          <div class="verso-blade-inner">
+            <span class="verso-brand">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              Community Connect
+            </span>
+
+            <!-- Shown while the blade covers the LEFT side (sign-up mode) -->
+            <div class="verso-band-copy" id="brandCopySignup">
+              <h2 class="verso-headline">
+                Stay Informed.<br>
+                <em>Stay Connected.</em>
+              </h2>
+              <p class="verso-subtext">
+                One place for barangay news, events, and activities.
+              </p>
+            </div>
+
+            <!-- Shown while the blade covers the RIGHT side (sign-in mode) -->
+            <div class="verso-band-copy hidden" id="brandCopySignin">
+              <h2 class="verso-headline">
+                Welcome back,<br>
+                <em>Resident.</em>
+              </h2>
+              <p class="verso-subtext">
+                Sign in to comment, join events, and see updates.
+              </p>
+            </div>
+
+            <div class="verso-blade-foot">
+              <span>Barangay Central</span>
+              <span>Resident Portal</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= LEFT PANEL: SIGN IN ================= -->
+        <section class="verso-pane verso-pane-signin" id="versoSigninPane" aria-label="Sign in">
+          <div class="verso-pane-inner">
+            <span class="verso-eyebrow">Resident Access</span>
+            <h1 class="verso-title">Sign In</h1>
+            <p class="verso-subtitle">Welcome back! Log in to see your account.</p>
+
+            <div class="alert alert-error" id="userLoginError">
+              Invalid username or password.
+            </div>
+
+            <form id="userLoginForm" novalidate>
+              <div class="verso-field">
+                <label for="userUsername">Username</label>
+                <div class="verso-input-wrap">
+                  <input type="text" id="userUsername" placeholder="e.g. juandecruz" autocomplete="username">
+                  <span class="verso-input-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </span>
+                </div>
+              </div>
+
+              <div class="verso-field">
+                <label for="userPassword">Password</label>
+                <div class="verso-input-wrap">
+                  <input type="password" id="userPassword" placeholder="Your password" autocomplete="current-password">
+                  <button type="button" class="verso-eye" data-verso-eye="userPassword" aria-label="Show password">
+                    <svg class="eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="eye-closed" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="verso-row">
+                <label class="verso-check">
+                  <input type="checkbox" checked>
+                  <span>Keep me signed in</span>
+                </label>
+                <a href="#" id="forgotPasswordLink" class="verso-link">Forgot password?</a>
+              </div>
+
+              <button type="submit" class="verso-submit">Sign In</button>
+            </form>
+
+            <p class="login-links">
+              New to Community Connect?
+              <button type="button" class="verso-toggle-btn" data-verso-mode="signup">Create Account</button>
+            </p>
+          </div>
+        </section>
+
+        <!-- ================= RIGHT PANEL: CREATE ACCOUNT ================= -->
+        <section class="verso-pane verso-pane-signup" id="versoSignupPane" aria-label="Create account">
+          <div class="verso-pane-inner">
+            <span class="verso-eyebrow">New Resident</span>
+            <h2 class="verso-title">Create Account</h2>
+            <p class="verso-subtitle">Make an account in under a minute.</p>
+
+            <div class="alert alert-error" id="registerError">
+              Please fix the errors below and try again.
+            </div>
+            <div class="alert alert-success" id="registerSuccess">
+              Registration successful! Redirecting to login...
+            </div>
+
+            <form id="registerForm" novalidate>
+              <div class="verso-field form-group" id="regGroupUsername">
+                <label for="regUsername">Username</label>
+                <div class="verso-input-wrap">
+                  <input type="text" id="regUsername" placeholder="Choose a username" autocomplete="off">
+                  <span class="verso-input-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                  </span>
+                </div>
+                
+                <p class="error-message">Username must be at least 3 characters.</p>
+              </div>
+
+             
+              <div class="verso-field form-group" id="regGroupPassword">
+                <label for="regPassword">Password</label>
+                <div class="verso-input-wrap">
+                  <input type="password" id="regPassword" placeholder="At least 6 characters" autocomplete="new-password">
+                  <button type="button" class="verso-eye" data-verso-eye="regPassword" aria-label="Show password">
+                    <svg class="eye-open" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="eye-closed" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 8 10 8a9.74 9.74 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                  </button>
+                </div>
+                
+                <p class="error-message">Password must be at least 6 characters.</p>
+
+                <!-- Security grade meter -->
+                <div class="verso-meter">
+                  <div class="verso-meter-head">
+                    <span>Password Strength</span>
+                    <span class="verso-grade" id="versoStrengthText">Weak</span>
+                  </div>
+                  <div class="verso-meter-track">
+                    <div class="verso-meter-bar" id="versoStrengthBar"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="verso-field form-group" id="regGroupConfirm">
+                <label for="regConfirm">Confirm Password</label>
+                <div class="verso-input-wrap">
+                  <input type="password" id="regConfirm" placeholder="Re-enter your password" autocomplete="new-password">
+                  <span class="verso-input-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                  </span>
+                </div>
+                <p class="error-message">Passwords do not match.</p>
+              </div>
+
+              <button type="submit" class="verso-submit">Create Account</button>
+            </form>
+
+            <p class="login-links">
+              Already registered?
+              <button type="button" class="verso-toggle-btn" data-verso-mode="signin">Sign In</button>
+            </p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

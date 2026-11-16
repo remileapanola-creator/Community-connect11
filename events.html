@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Connect | Events</title>
+  <meta name="description" content="See upcoming community events with dates, times, and locations. RSVP and stay updated.">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="canonical" href="https://communityconnect.example/events.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Community Connect">
+  <meta property="og:title" content="Community Connect | Events">
+  <meta property="og:description" content="See upcoming community events with dates, times, and locations. RSVP and stay updated.">
+  <meta property="og:url" content="https://communityconnect.example/events.html">
+  <meta property="og:image" content="https://communityconnect.example/icons/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Community Connect | Events">
+  <meta name="twitter:description" content="See upcoming community events with dates, times, and locations. RSVP and stay updated.">
+  <meta name="twitter:image" content="https://communityconnect.example/icons/icon-512.png">
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="manifest" href="manifest.json">
+  <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("communityTheme")==="light"?"light":"dark")}catch(e){}</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://communityconnect.example/index.html" },
+      { "@type": "ListItem", "position": 2, "name": "Events", "item": "https://communityconnect.example/events.html" }
+    ]
+  }
+  </script>
+</head>
+<body class="app-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <div class="topbar">
+    <div class="container">
+      <span>Community Office: (02) 1234-5678</span>
+      <span>communityconnect@email.com</span>
+      <span id="userAuthArea">
+        <a href="user-login.html">User Login</a> | <a href="register.html">Register</a>
+      </span>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo">
+        <div class="logo-mark">CC</div>
+        <div class="logo-text">Community Connect<span>News &amp; Announcements</span></div>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu">&#9776;</button>
+      <nav class="main-nav" id="mainNav">
+        <ul>
+          <li><a href="index.html">HOME</a></li>
+          <li><a href="about.html">ABOUT</a></li>
+          <li><a href="news.html">NEWS</a></li>
+          <li><a href="announcements.html">ANNOUNCEMENTS</a></li>
+          <li><a href="events.html" class="active" aria-current="page">EVENTS</a></li>
+          <li><a href="activities.html">ACTIVITIES</a></li>
+          <li><a href="gallery.html">GALLERY</a></li>
+          <li><a href="search.html">SEARCH</a></li>
+          <li><a href="news-ai.html">AI ASSISTANT</a></li>
+          <li><a href="contact.html">CONTACT</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="page-header" id="mainContent" tabindex="-1">
+    <div class="container">
+      <h1>Upcoming Events</h1>
+      <p>See what is happening in the community and count down to each event.</p>
+      <p class="breadcrumb"> <a href="index.html">Home</a> / <span>Events</span></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <!-- View switch: list or month calendar -->
+      <div class="toolbar events-toolbar">
+        <div class="view-toggle" id="eventsViewToggle" role="group" aria-label="View mode">
+          <button class="filter-btn active" data-view="list" type="button" aria-pressed="true">LIST</button>
+          <button class="filter-btn" data-view="calendar" type="button" aria-pressed="false">CALENDAR</button>
+        </div>
+      </div>
+
+      <!-- Event filter chips -->
+      <div class="filter-buttons" style="margin-bottom:16px;">
+        <button class="filter-btn active" data-event-type="all" type="button">All Types</button>
+        <button class="filter-btn" data-event-type="fiesta" type="button">Fiesta</button>
+        <button class="filter-btn" data-event-type="cleanup" type="button">Clean-Up</button>
+        <button class="filter-btn" data-event-type="medical" type="button">Medical Mission</button>
+        <button class="filter-btn" data-event-type="assembly" type="button">Assembly</button>
+      </div>
+
+      <div class="grid grid-3" id="eventsList">
+        <!-- Event cards are filled by JavaScript -->
+      </div>
+
+      <!-- Month calendar view (filled by JavaScript) -->
+      <div class="events-calendar hidden" id="eventsCalendar">
+        <div class="cal-head">
+          <button class="cal-nav" id="calPrev" type="button" aria-label="Previous month">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <strong class="cal-title" id="calTitle"></strong>
+          <button class="cal-nav cal-today-btn" id="calToday" type="button">TODAY</button>
+          <button class="cal-nav" id="calNext" type="button" aria-label="Next month">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+        <div class="cal-week" id="calWeek"></div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+
+      <div class="empty-state" id="eventsEmpty" style="display:none;">
+        <p>No upcoming events right now. Please check again later.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h4>Community Connect</h4>
+          <p>A community information website that keeps residents informed
+             about news, announcements, events, and activities. Simple,
+             reliable, and made for everyone.</p>
+        </div>
+        <div>
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="news.html">News</a></li>
+            <li><a href="announcements.html">Announcements</a></li>
+            <li><a href="search.html">Search</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>More</h4>
+          <ul>
+            <li><a href="events.html">Events</a></li>
+            <li><a href="activities.html">Activities</a></li>
+            <li><a href="gallery.html">Gallery</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Community Office</h4>
+          <ul>
+            <li>123 Community Street, Barangay Central</li>
+            <li>(02) 1234-5678</li>
+            <li>communityconnect@email.com</li>
+            <li>Mon - Fri, 8:00 AM - 5:00 PM</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 Community Connect. WS101 Mini Capstone Project.
+        <a href="admin-login.html">Admin Login</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

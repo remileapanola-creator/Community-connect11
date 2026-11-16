@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Connect | Register</title>
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="manifest" href="manifest.json">
+  <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("communityTheme")==="light"?"light":"dark")}catch(e){}</script>
+</head>
+<body class="app-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <div class="login-page">
+
+    <div class="login-box" id="mainContent" tabindex="-1">
+      <div class="logo-mark">CC</div>
+      <h1>Create Account</h1>
+      <p class="login-sub">Register to access your Community Connect dashboard</p>
+
+      <div class="alert alert-error" id="registerError">
+        Please fix the errors below and try again.
+      </div>
+      <div class="alert alert-success" id="registerSuccess">
+        Registration successful! Redirecting to login...
+      </div>
+
+      <form id="registerForm" novalidate>
+        <div class="form-group" id="regGroupUsername">
+          <label for="regUsername">Username</label>
+          <input type="text" id="regUsername" placeholder="e.g. juandecruz" autocomplete="off">
+          <p class="error-message">Username must be at least 3 characters.</p>
+        </div>
+
+        <div class="form-group" id="regGroupPassword">
+          <label for="regPassword">Password</label>
+          <input type="password" id="regPassword" placeholder="At least 6 characters">
+          <p class="error-message">Password must be at least 6 characters.</p>
+        </div>
+
+        <div class="form-group" id="regGroupConfirm">
+          <label for="regConfirm">Confirm Password</label>
+          <input type="password" id="regConfirm" placeholder="Type the password again">
+          <p class="error-message">Passwords do not match.</p>
+        </div>
+
+        <button type="submit" class="btn btn-block">REGISTER</button>
+      </form>
+
+      <p class="login-links">Already have an account? <a href="user-login.html">Login here</a></p>
+
+      <div class="login-note">
+        Demo registration for a school project. Accounts are saved only in
+        this browser's LocalStorage.
+      </div>
+
+      <a class="login-back" href="index.html">&larr; Back to website</a>
+    </div>
+
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

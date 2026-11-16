@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Connect | Home</title>
+  <meta name="description" content="Community Connect keeps residents informed with the latest barangay news, announcements, events, activities, and photo galleries in one place.">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="canonical" href="https://communityconnect.example/index.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Community Connect">
+  <meta property="og:title" content="Community Connect | Home">
+  <meta property="og:description" content="Community Connect keeps residents informed with the latest barangay news, announcements, events, activities, and photo galleries in one place.">
+  <meta property="og:url" content="https://communityconnect.example/index.html">
+  <meta property="og:image" content="https://communityconnect.example/icons/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Community Connect | Home">
+  <meta name="twitter:description" content="Community Connect keeps residents informed with the latest barangay news, announcements, events, activities, and photo galleries in one place.">
+  <meta name="twitter:image" content="https://communityconnect.example/icons/icon-512.png">
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="manifest" href="manifest.json">
+  <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("communityTheme")==="light"?"light":"dark")}catch(e){}</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Community Connect",
+    "url": "https://communityconnect.example/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://communityconnect.example/news.html#q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Community Connect",
+    "url": "https://communityconnect.example/",
+    "logo": "https://communityconnect.example/icons/icon-192.png",
+    "description": "Barangay community news and announcements portal."
+  }
+  </script>
+</head>
+<body class="app-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <!-- Top contact bar -->
+  <div class="topbar">
+    <div class="container">
+      <span>Community Office: (02) 1234-5678</span>
+      <span>communityconnect@email.com</span>
+      <span id="userAuthArea">
+        <a href="user-login.html">User Login</a> | <a href="register.html">Register</a>
+      </span>
+    </div>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo">
+        <div class="logo-mark">CC</div>
+        <div class="logo-text">Community Connect<span>News &amp; Announcements</span></div>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-controls="mainNav">&#9776;</button>
+      <nav class="main-nav" id="mainNav">
+        <ul>
+          <li><a href="index.html" class="active" aria-current="page">HOME</a></li>
+          <li><a href="about.html">ABOUT</a></li>
+          <li><a href="news.html">NEWS</a></li>
+          <li><a href="announcements.html">ANNOUNCEMENTS</a></li>
+          <li><a href="events.html">EVENTS</a></li>
+          <li><a href="activities.html">ACTIVITIES</a></li>
+          <li><a href="gallery.html">GALLERY</a></li>
+          <li><a href="search.html">SEARCH</a></li>
+          <li><a href="news-ai.html">AI ASSISTANT</a></li>
+          <li><a href="contact.html">CONTACT</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Weather Alert Banner (dismissible) -->
+  <section class="section section-white">
+    <div class="container">
+      <div class="alert-banner" id="weatherAlertBanner" style="display:none;">
+        <span class="alert-icon">⚠️</span>
+        <span class="alert-text"><strong>Weather Advisory:</strong> Possible heavy rains this afternoon. Please bring an umbrella and stay safe.</span>
+        <button class="alert-close" id="weatherAlertClose" type="button" aria-label="Close alert">×</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hero -->
+  <section class="hero" id="mainContent" tabindex="-1">
+    <div class="container">
+      <h1>Stay Informed. Stay Connected.</h1>
+      <p>Welcome to Community Connect, your one-stop source for community news,
+         announcements, events, and activities. Everything you need to know about
+         our community is right here.</p>
+      <div class="hero-buttons">
+        <a href="news.html" class="btn btn-light">News Feed</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Barangay Officials Contact Card -->
+  <section class="section section-blue">
+    <div class="container">
+      <div class="contact-card">
+        <h3 class="card-title">Barangay Officials</h3>
+        <div class="officials-grid">
+          <div class="official-item">
+            <div class="official-avatar">KC</div>
+            <div class="official-info">
+              <strong>Kapitan Juan Dela Cruz</strong><br>
+              <span>Barangay Captain</span>
+            </div>
+            <a href="tel:0212345678" class="btn btn-small">Call Office</a>
+          </div>
+          <div class="official-item">
+            <div class="official-avatar">MS</div>
+            <div class="official-info">
+              <strong>Maria Santos</strong><br>
+              <span>Barangay Secretary</span>
+            </div>
+            <a href="tel:09123456789" class="btn btn-small">Call Secretary</a>
+          </div>
+          <div class="official-item">
+            <div class="official-avatar">JR</div>
+            <div class="official-info">
+              <strong>Jose Reyes</strong><br>
+              <span>Barangay Kagawad</span>
+            </div>
+            <a href="tel:09987654321" class="btn btn-small">Call Kagawad</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Upcoming Events Countdown -->
+  <section class="section section-white">
+    <div class="container">
+      <h2 class="section-title">Next Community Event</h2>
+      <div class="countdown-box" id="eventCountdown">
+        <div class="countdown-item"><span class="countdown-num" id="cdDays">00</span><span class="countdown-label">Days</span></div>
+        <div class="countdown-item"><span class="countdown-num" id="cdHours">00</span><span class="countdown-label">Hours</span></div>
+        <div class="countdown-item"><span class="countdown-num" id="cdMins">00</span><span class="countdown-label">Mins</span></div>
+        <div class="countdown-item"><span class="countdown-num" id="cdSecs">00</span><span class="countdown-label">Secs</span></div>
+      </div>
+      <p class="text-center mt-10"><a href="events.html" class="btn">View All Events</a></p>
+    </div>
+  </section>
+
+  <!-- Quick Poll -->
+  <section class="section section-blue">
+    <div class="container">
+      <h2 class="section-title">Quick Poll</h2>
+      <div class="poll-card">
+        <p class="poll-question">Best time for barangay assembly?</p>
+        <div class="poll-options">
+          <button class="poll-btn" onclick="votePoll('morning')">🌅 Morning (8:00 AM)</button>
+          <button class="poll-btn" onclick="votePoll('afternoon')">☀️ Afternoon (2:00 PM)</button>
+          <button class="poll-btn" onclick="votePoll('evening')">🌙 Evening (6:00 PM)</button>
+        </div>
+        <div class="poll-result" id="pollResult"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Links -->
+  <section class="section section-white">
+    <div class="container">
+      <h2 class="section-title">Quick Links</h2>
+      <p class="section-subtitle">Jump straight to what you need.</p>
+      <div class="quick-links">
+        <a href="news.html" class="quick-link">
+          <span class="ql-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
+          <h4>Community News</h4>
+          <p>Latest stories and updates</p>
+        </a>
+        <a href="announcements.html" class="quick-link">
+          <span class="ql-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>
+          <h4>Announcements</h4>
+          <p>Important notices for everyone</p>
+        </a>
+        <a href="events.html" class="quick-link">
+          <span class="ql-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg></span>
+          <h4>Upcoming Events</h4>
+          <p>Don't miss what's coming up</p>
+        </a>
+        <a href="activities.html" class="quick-link">
+          <span class="ql-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+          <h4>Activities</h4>
+          <p>Join and be part of the fun</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Today's Weather -->
+  <section class="section section-blue">
+    <div class="container">
+      <h2 class="section-title">Today's Weather</h2>
+      <p class="section-subtitle">Quick conditions for our community.</p>
+      <div class="weather-card" id="weatherCard">
+        <!-- Filled by JavaScript -->
+      </div>
+      <p class="text-center mt-20"><a href="news-ai.html" class="btn btn-light">ASK THE AI ASSISTANT</a></p>
+    </div>
+  </section>
+
+  <!-- Latest News -->
+  <section class="section section-blue">
+    <div class="container">
+      <h2 class="section-title">Latest News</h2>
+      <p class="section-subtitle">Recent stories from around the community.</p>
+      <div class="grid grid-3" id="homeLatestNews">
+        <!-- News cards are loaded by JavaScript -->
+      </div>
+      <p class="text-center mt-20"><a href="news.html" class="btn">VIEW ALL NEWS</a></p>
+    </div>
+  </section>
+
+  <!-- Important Announcements -->
+  <section class="section section-white">
+    <div class="container">
+      <h2 class="section-title">Important Announcements</h2>
+      <p class="section-subtitle">Notices you should not miss.</p>
+      <div id="homeAnnouncements">
+        <!-- Announcements are loaded by JavaScript -->
+      </div>
+      <p class="text-center mt-20"><a href="announcements.html" class="btn">VIEW ALL ANNOUNCEMENTS</a></p>
+    </div>
+  </section>
+
+  <!-- Upcoming Events -->
+  <section class="section section-blue">
+    <div class="container">
+      <h2 class="section-title">Upcoming Events</h2>
+      <p class="section-subtitle">Mark your calendars.</p>
+      <div class="grid grid-3" id="homeEvents">
+        <!-- Events are loaded by JavaScript -->
+      </div>
+      <p class="text-center mt-20"><a href="events.html" class="btn">VIEW ALL EVENTS</a></p>
+    </div>
+  </section>
+
+  <!-- Community Activities -->
+  <section class="section section-white">
+    <div class="container">
+      <h2 class="section-title">Community Activities</h2>
+      <p class="section-subtitle">Ways to get involved in the community.</p>
+      <div class="grid grid-3" id="homeActivities">
+        <!-- Activities are loaded by JavaScript -->
+      </div>
+      <p class="text-center mt-20"><a href="activities.html" class="btn">VIEW ALL ACTIVITIES</a></p>
+    </div>
+  </section>
+
+  <!-- About teaser -->
+  <section class="section section-blue">
+    <div class="container">
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></div>
+          <h3>Always Updated</h3>
+          <p>News and announcements are posted regularly by the community office.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <h3>For Everyone</h3>
+          <p>Residents of all ages can read everything without signing in.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></div>
+          <h3>One Place</h3>
+          <p>News, events, activities, and photos are gathered in one website.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h4>Community Connect</h4>
+          <p>A community information website that keeps residents informed
+             about news, announcements, events, and activities. Simple,
+             reliable, and made for everyone.</p>
+        </div>
+        <div>
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="news.html">News</a></li>
+            <li><a href="announcements.html">Announcements</a></li>
+            <li><a href="search.html">Search</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>More</h4>
+          <ul>
+            <li><a href="events.html">Events</a></li>
+            <li><a href="activities.html">Activities</a></li>
+            <li><a href="gallery.html">Gallery</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Community Office</h4>
+          <ul>
+            <li>123 Community Street, Barangay Central</li>
+            <li>(02) 1234-5678</li>
+            <li>communityconnect@email.com</li>
+            <li>Mon - Fri, 8:00 AM - 5:00 PM</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 Community Connect. WS101 Mini Capstone Project.
+        <a href="admin-login.html">Admin Login</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

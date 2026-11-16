@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Connect — Project Report</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #1f4e79;
+      --accent: #2e75b6;
+      --light: #d6e9f8;
+      --bg: #0a0f1a;
+      --card: rgba(255, 255, 255, 0.06);
+      --text: #e8f1f9;
+      --muted: #9aa4ac;
+    }
+
+    html, body {
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ---------- LIVE ANIMATED BACKGROUND ---------- */
+    .live-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.35;
+      animation: drift 14s infinite alternate ease-in-out;
+    }
+
+    .blob-1 {
+      width: 600px; height: 600px;
+      background: var(--primary);
+      top: -150px; left: -150px;
+      animation-delay: 0s;
+    }
+
+    .blob-2 {
+      width: 500px; height: 500px;
+      background: var(--accent);
+      bottom: -100px; right: -100px;
+      animation-delay: -4s;
+    }
+
+    .blob-3 {
+      width: 400px; height: 400px;
+      background: #7c3aed;
+      top: 40%; left: 50%;
+      animation-delay: -8s;
+    }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(80px, 120px) scale(1.15); }
+    }
+
+    .grid {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.4;
+    }
+
+    /* ---------- LAYOUT ---------- */
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 24px 120px;
+      position: relative;
+      z-index: 1;
+    }
+
+    section {
+      scroll-margin-top: 100px;
+      margin-bottom: 100px;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+
+    .section-number {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: grid; place-items: center;
+      font-size: 22px; font-weight: 900; color: var(--white);
+      box-shadow: 0 10px 30px rgba(46, 117, 182, 0.45);
+    }
+
+    h1 {
+      font-size: clamp(48px, 8vw, 100px);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      margin-bottom: 20px;
+      background: linear-gradient(to right, var(--text), var(--light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+    }
+
+    h2 {
+      font-size: clamp(30px, 5vw, 44px);
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 18px 0 10px;
+    }
+
+    p {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 820px;
+      margin-bottom: 16px;
+    }
+
+    .lead {
+      font-size: 24px;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 30px;
+      max-width: 900px;
+    }
+
+    /* ---------- CARDS & TABLE ---------- */
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 26px;
+      margin-bottom: 18px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card h3 {
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .card p, .card li {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 10px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 16px;
+    }
+
+    th {
+      background: rgba(255,255,255,0.04);
+      color: var(--light);
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* ---------- BUTTONS ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 28px;
+      border-radius: 12px;
+      border: none;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 12px 32px rgba(46, 117, 182, 0.4);
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--light);
+      box-shadow: none;
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255,255,255,0.06);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+
+    /* ---------- KPI STATS ---------- */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin: 30px 0;
+    }
+
+    .kpi {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 22px;
+      backdrop-filter: blur(8px);
+    }
+
+    .kpi .big {
+      font-size: 34px;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .kpi .label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ---------- FOOTER ---------- */
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ---------- SCROLL INDICATOR ---------- */
+    .scroll-hint {
+      position: fixed;
+      right: 24px;
+      bottom: 40px;
+      z-index: 10;
+      font-size: 13px;
+      color: var(--muted);
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(10px); }
+    }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 768px) {
+      h1 { font-size: 40px; }
+      h2 { font-size: 28px; }
+      .wrap { padding: 80px 18px 100px; }
+      .kpi .big { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="live-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <div class="grid"></div>
+
+  <div class="scroll-hint">Scroll to read report &darr;</div>
+
+  <div class="wrap">
+    
+    <!-- COVER -->
+    <section id="cover">
+      <h1>Community Connect</h1>
+      <p class="lead">News &amp; Announcements Portal &mdash; WS101 Mini Capstone Project</p>
+      <p style="font-size: 20px; color: var(--muted); max-width: 600px;">
+        A frontend-only barangay community portal built with plain HTML, CSS, and vanilla JavaScript.
+        No frameworks. No build step. No backend.
+      </p>
+      <div class="btn-row">
+        <a href="index.html" class="btn">View Live Website</a>
+        <a href="#overview" class="btn btn-outline">Start Report</a>
+      </div>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <div class="section-head">
+        <div class="section-number">01</div>
+        <h2>Project Overview</h2>
+      </div>
+      <p>Community Connect is a complete community portal for barangay (village) news, announcements, events, activities, photo galleries, and emergency services.</p>
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="big">3</div>
+          <div class="label">User Roles</div>
+        </div>
+        <div class="kpi">
+          <div class="big">11</div>
+          <div class="label">Public Pages</div>
+        </div>
+        <div class="kpi">
+          <div class="big">3</div>
+          <div class="label">Dashboards</div>
+        </div>
+        <div class="kpi">
+          <div class="big">706</div>
+          <div class="label">Tests Passing</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Technology Stack</h3>
+        <ul>
+          <li><strong>Frontend:</strong> HTML5, CSS3, Vanilla JavaScript</li>
+          <li><strong>Storage:</strong> localStorage + IndexedDB (videos)</li>
+          <li><strong>Optional Server:</strong> Node.js (server.js) for Go Live streaming</li>
+          <li><strong>PWA:</strong> Service worker + installable manifest</li>
+          <li><strong>i18n:</strong> English / Filipino toggle</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ROLES -->
+    <section id="roles">
+      <div class="section-head">
+        <div class="section-number">02</div>
+        <h2>User Roles &amp; Access</h2>
+      </div>
+      <table>
+        <thead>
+          <tr><th style="width:22%">Role</th><th style="width:20%">Login</th><th>Dashboard</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Admin</strong></td><td>admin / admin123</td><td>admin.html &mdash; full system control</td></tr>
+          <tr><td><strong>Barangay Official</strong></td><td>official / official123</td><td>official-dashboard.html &mdash; barangay-scoped duties</td></tr>
+          <tr><td><strong>Resident</strong></td><td>Register at register.html</td><td>user-dashboard.html &mdash; certificates, incidents, feed</td></tr>
+          <tr><td><strong>Guest</strong></td><td>None</td><td>Public pages &mdash; read-only + guest comments</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top: 18px;">Residents and Barangay Officials share the same login form (<code>user-login.html</code>). The account role decides which dashboard opens.</p>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features">
+      <div class="section-head">
+        <div class="section-number">03</div>
+        <h2>Key Features</h2>
+      </div>
+      <div class="card">
+        <h3>Public Website</h3>
+        <p>Home, News, Announcements, Events (RSVP + Calendar), Activities, Gallery, Global Search, Emergency Hotlines, News AI Assistant, About, Contact.</p>
+      </div>
+      <div class="card">
+        <h3>Resident Dashboard</h3>
+        <p>Certificate Requests (Indigency, Clearance, Residency, Good Moral, Business Clearance), Incident Reports, Community Feed (Lost &amp; Found), My Profile, Emergency Alert Popup with 30-second alarm + AI voice.</p>
+      </div>
+      <div class="card">
+        <h3>Official Dashboard</h3>
+        <p>Certificate request review (approve / reject / print A4 certificate), Incident response (claim / updates / resolve), community feeds, notification bell filtered by All / Incidents / Certificates.</p>
+      </div>
+      <div class="card">
+        <h3>Admin Dashboard</h3>
+        <p>Content CRUD, Manage Users, Comments moderation, Go Live studio, Emergency Broadcast studio, Settings (backup / restore), audit log.</p>
+      </div>
+    </section>
+
+    <!-- GO LIVE -->
+    <section id="go-live">
+      <div class="section-head">
+        <div class="section-number">04</div>
+        <h2>Go Live Streaming</h2>
+      </div>
+      <p class="lead">Real-time camera &amp; microphone broadcast from the admin to residents on other computers.</p>
+      <div class="card">
+        <ul>
+          <li><strong>Transport:</strong> WebSocket relay via <code>server.js</code> for LAN cross-device streaming</li>
+          <li><strong>Fallback:</strong> BroadcastChannel for same-browser use when no server is running</li>
+          <li><strong>Viewer experience:</strong> LIVE badge, live viewer count, running duration, stall watchdog</li>
+          <li><strong>Recording:</strong> Optional save to IndexedDB (Live Archives)</li>
+          <li><strong>Run:</strong> <code>node server.js</code></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- EMERGENCY -->
+    <section id="emergency">
+      <div class="section-head">
+        <div class="section-number">05</div>
+        <h2>Emergency Broadcast</h2>
+      </div>
+      <div class="card">
+        <ul>
+          <li>Admin publishes alert to one barangay or all barangays with expiry</li>
+          <li>Instant EMERGENCY ALERT popup on matching dashboards</li>
+          <li>30-second Web Audio alarm + AI voice reads description aloud</li>
+          <li>STOP ALARM silences own device only; REPEAT ANNOUNCEMENT available</li>
+          <li>Popup stays until admin resolves or expires</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- CERT & INCIDENT -->
+    <section id="services">
+      <div class="section-head">
+        <div class="section-number">06</div>
+        <h2>Certificate &amp; Incident Services</h2>
+      </div>
+      <div class="card">
+        <h3>Certificate Requests</h3>
+        <p>Resident selects barangay (only admin-created barangays appear), chooses type, gets reference number (e.g., <code>CC-2026-12345</code>), tracks status Pending &rarr; Ready &rarr; Released. Officials print A4 certificate and export release-log CSV.</p>
+      </div>
+      <div class="card">
+        <h3>Incident Reports</h3>
+        <p>Residents report type, severity, location, description, photo, GPS/landmark. Reference number (e.g., <code>INC-2026-12345</code>). Status: Reported &rarr; Responding &rarr; Resolved. Notifies all officials. Escalation after 15 minutes.</p>
+      </div>
+    </section>
+
+    <!-- TESTING -->
+    <section id="testing">
+      <div class="section-head">
+        <div class="section-number">07</div>
+        <h2>Testing &amp; Quality</h2>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="big">706/706</div>
+          <div class="label">E2E Tests Passing</div>
+        </div>
+        <div class="kpi">
+          <div class="big">ALL PASS</div>
+          <div class="label">Relay Server Test</div>
+        </div>
+        <div class="kpi">
+          <div class="big">0</div>
+          <div class="label">Missing Translations</div>
+        </div>
+      </div>
+      <div class="card">
+        <p>End-to-end suite (<code>tests/e2e.html</code>) runs in hidden iframes via Chrome DevTools Protocol and waits for real completion. Relay server test (<code>tests/relay-test.cjs</code>) verifies static serving, path-traversal guard, and WebSocket text + binary relay including a 70 KB frame.</p>
+      </div>
+    </section>
+
+    <!-- HOW TO RUN -->
+    <section id="run">
+      <div class="section-head">
+        <div class="section-number">08</div>
+        <h2>How to Run</h2>
+      </div>
+      <div class="card">
+        <h3>Offline (simplest)</h3>
+        <p>Double-click <code>index.html</code>. Works from <code>file://</code>.</p>
+        <h3>PWA / HTTP</h3>
+        <p><code>python -m http.server 8000</code> &rarr; open <code>http://localhost:8000/</code></p>
+        <h3>Go Live Streaming</h3>
+        <p><code>node server.js</code> &rarr; Admin: <code>http://localhost:8787/admin.html</code></p>
+      </div>
+    </section>
+
+    <!-- CONCLUSION -->
+    <section id="conclusion">
+      <div class="section-head">
+        <div class="section-number">09</div>
+        <h2>Conclusion</h2>
+      </div>
+      <p class="lead">Community Connect delivers a complete barangay portal with citizen services, real-time streaming, emergency broadcasts, role-based dashboards, professional glass-morphism UI, dark mode, mobile-first design, PWA support, zero dependencies, and 706/706 tests passing &mdash; all without a backend or build step.</p>
+      <div class="btn-row" style="margin-top: 30px;">
+        <a href="index.html" class="btn">Open Live Website</a>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    Community Connect &middot; WS101 Mini Capstone Project &middot; HTML &bull; CSS &bull; Vanilla JavaScript
+  </footer>
+
+  <script>
+    // Reveal sections on scroll
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('section').forEach(sec => observer.observe(sec));
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

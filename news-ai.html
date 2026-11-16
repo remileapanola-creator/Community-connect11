@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News AI Assistant | Community Connect</title>
+  <meta name="description" content="Ask the News AI Assistant for headlines, summaries, weather, and emergency advisories from Community Connect.">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="canonical" href="https://communityconnect.example/news-ai.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Community Connect">
+  <meta property="og:title" content="News AI Assistant | Community Connect">
+  <meta property="og:description" content="Ask the News AI Assistant for headlines, summaries, weather, and emergency advisories from Community Connect.">
+  <meta property="og:url" content="https://communityconnect.example/news-ai.html">
+  <meta property="og:image" content="https://communityconnect.example/icons/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="News AI Assistant | Community Connect">
+  <meta name="twitter:description" content="Ask the News AI Assistant for headlines, summaries, weather, and emergency advisories from Community Connect.">
+  <meta name="twitter:image" content="https://communityconnect.example/icons/icon-512.png">
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="manifest" href="manifest.json">
+  <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("communityTheme")==="light"?"light":"dark")}catch(e){}</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://communityconnect.example/index.html" },
+      { "@type": "ListItem", "position": 2, "name": "News Ai", "item": "https://communityconnect.example/news-ai.html" }
+    ]
+  }
+  </script>
+</head>
+<body class="app-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <div class="topbar">
+    <div class="container">
+      <span>Community Office: (02) 1234-5678</span>
+      <span>communityconnect@email.com</span>
+      <span id="userAuthArea">
+        <a href="user-login.html">User Login</a> | <a href="register.html">Register</a>
+      </span>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo">
+        <div class="logo-mark">CC</div>
+        <div class="logo-text">Community Connect<span>News &amp; Announcements</span></div>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu">&#9776;</button>
+      <nav class="main-nav" id="mainNav">
+        <ul>
+          <li><a href="index.html">HOME</a></li>
+          <li><a href="about.html">ABOUT</a></li>
+          <li><a href="news.html">NEWS</a></li>
+          <li><a href="announcements.html">ANNOUNCEMENTS</a></li>
+          <li><a href="events.html">EVENTS</a></li>
+          <li><a href="activities.html">ACTIVITIES</a></li>
+          <li><a href="gallery.html">GALLERY</a></li>
+          <li><a href="search.html">SEARCH</a></li>
+          <li><a href="news-ai.html" class="active" aria-current="page">AI ASSISTANT</a></li>
+          <li><a href="contact.html">CONTACT</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section class="page-header" id="mainContent" tabindex="-1">
+    <div class="container">
+      <h1>News AI Assistant</h1>
+      <p>Your Smart Source for Real-Time News, Weather, and Public Updates</p>
+      <p class="breadcrumb"> <a href="index.html">Home</a> / <span>AI Assistant</span></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <div class="chat-shell">
+        <div class="chat-box">
+
+          <!-- Chat header -->
+          <div class="chat-top">
+            <div>
+              <h2>News AI Assistant</h2>
+              <p>Virtual news reporter &mdash; news, weather, public info, and emergencies</p>
+            </div>
+            <button class="btn btn-small btn-light" id="chatClearBtn" type="button">NEW CHAT</button>
+          </div>
+
+          <!-- Topic chips -->
+          <div class="chat-chips" id="chatChips">
+            <button class="chat-chip" type="button" data-q="What are today's top headlines?">Breaking News</button>
+            <button class="chat-chip" type="button" data-q="Give me the latest local news.">Local News</button>
+            <button class="chat-chip" type="button" data-q="Summarize today's political news.">Political News</button>
+            <button class="chat-chip" type="button" data-q="What are the latest technology updates?">Technology</button>
+            <button class="chat-chip" type="button" data-q="Give me the latest sports news.">Sports</button>
+            <button class="chat-chip" type="button" data-q="What is the weather forecast today?">Weather</button>
+            <button class="chat-chip" type="button" data-q="Is there a typhoon in the Philippines?">Typhoon</button>
+            <button class="chat-chip" type="button" data-q="Are there any emergency alerts today?">Emergency Alerts</button>
+            <button class="chat-chip" type="button" data-q="Give me the latest public advisories.">Public Info</button>
+          </div>
+
+          <!-- Conversation area -->
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-hero" id="chatHero">
+              <div class="hero-icon">AI</div>
+              <h2>News AI Assistant</h2>
+              <p>What can I help you with today?</p>
+              <!-- Suggested questions -->
+              <div class="chat-suggestions" id="chatSuggestions"></div>
+            </div>
+            <!-- Messages are loaded by JavaScript -->
+          </div>
+
+          <!-- Message input -->
+          <form class="chat-input" id="chatForm">
+            <label class="hidden" for="chatInput">Message</label>
+            <div class="chat-input-wrapper">
+              <textarea id="chatInput" rows="1" maxlength="500" autocomplete="off"
+                        placeholder="Message News AI Assistant..."></textarea>
+              <button class="btn btn-small" type="button" id="chatVoiceBtn" aria-label="Voice input">🎤</button>
+              <button type="submit" class="chat-send" id="chatSendBtn" aria-label="Send message" disabled>&#8593;</button>
+            </div>
+          </form>
+
+          <p class="chat-note">
+            Demo assistant for a school project. It answers from this website's data and
+            built-in sample information &mdash; it does not connect to the internet.
+            For real emergencies, contact the community office.
+          </p>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h4>Community Connect</h4>
+          <p>A community information website that keeps residents informed
+             about news, announcements, events, and activities. Simple,
+             reliable, and made for everyone.</p>
+        </div>
+        <div>
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="news.html">News</a></li>
+            <li><a href="announcements.html">Announcements</a></li>
+            <li><a href="search.html">Search</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>More</h4>
+          <ul>
+            <li><a href="events.html">Events</a></li>
+            <li><a href="activities.html">Activities</a></li>
+            <li><a href="gallery.html">Gallery</a></li>
+            <li><a href="news-ai.html">AI Assistant</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Community Office</h4>
+          <ul>
+            <li>123 Community Street, Barangay Central</li>
+            <li>(02) 1234-5678</li>
+            <li>communityconnect@email.com</li>
+            <li>Mon - Fri, 8:00 AM - 5:00 PM</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 Community Connect. WS101 Mini Capstone Project.
+        <a href="admin-login.html">Admin Login</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

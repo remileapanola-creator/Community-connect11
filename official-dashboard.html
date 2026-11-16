@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Connect | Barangay Official Dashboard</title>
+  <meta name="description" content="Barangay Official dashboard - review and print certificate requests and read community updates.">
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="manifest" href="manifest.json">
+  <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("communityTheme")==="light"?"light":"dark")}catch(e){}</script>
+</head>
+<body class="official-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <!-- Official top header -->
+  <header class="admin-header">
+    <div class="logo">
+      <img class="logo-mark-img" src="images/logo.svg" alt="" width="48" height="48">
+      <div class="logo-text">Community Connect<span>Barangay Official</span></div>
+    </div>
+    <div class="admin-user">
+      <button class="duty-toggle" id="officialDutyToggle" type="button" aria-pressed="false">
+        <span class="duty-dot" aria-hidden="true"></span>
+        <span class="duty-label">Off Duty</span>
+      </button>
+      <div class="notif-wrap">
+        <button class="notif-bell" id="officialNotifBtn" type="button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-dot" id="officialNotifDot" hidden></span>
+        </button>
+        <div class="notif-panel hidden" id="officialNotifPanel">
+          <div class="notif-panel-head">
+            <strong>NOTIFICATIONS</strong>
+            <button class="notif-sound" id="officialSoundToggle" type="button" aria-pressed="true" title="Alert sound on">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+            </button>
+            <button class="notif-mark-all" type="button">MARK ALL READ</button>
+            <button class="notif-view-all" type="button">VIEW ALL</button>
+          </div>
+          <div class="notif-filter-tabs">
+            <button class="notif-filter active" data-filter="all" type="button">All</button>
+            <button class="notif-filter" data-filter="incident" type="button">Incidents</button>
+            <button class="notif-filter" data-filter="certificate" type="button">Certificates</button>
+          </div>
+          <div class="notif-panel-list" id="officialNotifList"></div>
+        </div>
+      </div>
+      <div class="header-account">
+        <button class="header-account-btn" id="officialAccountBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+          <span class="admin-avatar" id="officialHeaderAvatar">O</span>
+          <span class="header-account-name">
+            <span id="officialHeaderName">Official</span>
+            <svg class="header-account-caret" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </button>
+        <div class="header-account-menu hidden" id="officialAccountMenu">
+          <div class="account-menu-head">
+            <span class="account-menu-avatar" id="officialMenuAvatar">O</span>
+            <div class="account-menu-id">
+              <strong id="officialMenuName">Official</strong>
+              <span class="account-menu-email" id="officialMenuEmail">official@community.ph</span>
+            </div>
+          </div>
+          <button class="header-account-item" id="officialAccountProfile" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            My Profile
+          </button>
+          <button class="header-account-item" id="officialAccountSettings" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </button>
+          <div class="header-account-sep"></div>
+          <button class="header-account-item header-account-signout" id="officialAccountLogout" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </button>
+        </div>
+      </div>
+      <button class="admin-nav-toggle" id="officialNavToggle" type="button" aria-label="Open menu">&#9776;</button>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+
+    <!-- Official side navigation -->
+    <nav class="admin-sidebar" id="officialSidebar">
+      <span class="sidebar-label">Overview</span>
+      <a href="#dashboard" class="active" aria-current="page" data-osection="dashboard"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>DASHBOARD</a>
+      <span class="sidebar-label">Barangay Services</span>
+      <a href="#requests" data-osection="requests"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span>CERTIFICATE REQUESTS</a>
+      <a href="#incidents" data-osection="incidents"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>INCIDENT REPORTS</a>
+      <span class="sidebar-label">Community</span>
+      <a href="#feed" data-osection="feed"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/><circle cx="9" cy="11" r="1"/><circle cx="13" cy="11" r="1"/><circle cx="17" cy="11" r="1"/></svg></span>COMMUNITY FEED</a>
+      <a href="#news" data-osection="news"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>COMMUNITY NEWS</a>
+      <a href="#announcements" data-osection="announcements"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>ANNOUNCEMENTS</a>
+      <a href="#events" data-osection="events"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>UPCOMING EVENTS</a>
+      <a href="#activities" data-osection="activities"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>ACTIVITIES</a>
+      <a href="#gallery" data-osection="gallery"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>GALLERY</a>
+      <span class="sidebar-label">Website</span>
+      <a href="index.html" class="sidebar-back"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></span>BACK TO WEBSITE</a>
+    </nav>
+
+    <!-- Official main content -->
+    <main class="admin-main" id="mainContent" tabindex="-1">
+
+      <!-- ===== DASHBOARD / OVERVIEW ===== -->
+      <section id="sectionOffDashboard">
+        <h1 class="admin-page-title" id="offWelcome">Welcome!</h1>
+        <p class="admin-page-sub" id="offRole">Barangay Official</p>
+
+        <div class="stats-grid">
+          <div class="stat-card st-orange">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statOffPending">0</span>
+              <span class="stat-label">Pending Requests</span>
+            </div>
+          </div>
+          <div class="stat-card st-blue">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statOffReady">0</span>
+              <span class="stat-label">Ready to Print</span>
+            </div>
+          </div>
+          <div class="stat-card st-green">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statOffReleased">0</span>
+              <span class="stat-label">Released Certificates</span>
+            </div>
+          </div>
+          <div class="stat-card st-navy">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statOffTotal">0</span>
+              <span class="stat-label">Total Requests</span>
+            </div>
+          </div>
+          <div class="stat-card st-red">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statOffIncidents">0</span>
+              <span class="stat-label">Active Incidents</span>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="admin-page-title sub-heading">Quick Actions</h2>
+        <div class="quick-actions">
+          <button type="button" class="quick-action" onclick="showOfficialSection('incidents')">
+            <span class="qa-icon qa-red" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            <span>Incident Reports</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showOfficialSection('requests')">
+            <span class="qa-icon qa-green" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            <span>Certificate Requests</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showOfficialSection('feed')">
+            <span class="qa-icon qa-blue" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/><line x1="8" y1="10" x2="16" y2="10"/></svg></span>
+            <span>Community Feed</span>
+          </button>
+          <a class="quick-action" href="index.html">
+            <span class="qa-icon qa-navy" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+            <span>View Website</span>
+          </a>
+        </div>
+
+        <div class="form-box">
+          <h3 class="mb-20">Incident Response</h3>
+          <div class="kpi-row">
+            <div class="kpi-card">
+              <span class="kpi-num" id="kpiIncidentOpen">0</span>
+              <span class="kpi-label">Open Incidents</span>
+            </div>
+            <div class="kpi-card kpi-warn">
+              <span class="kpi-num" id="kpiIncidentEscalated">0</span>
+              <span class="kpi-label">Escalated</span>
+            </div>
+            <div class="kpi-card kpi-ok">
+              <span class="kpi-num" id="kpiIncidentResponse">—</span>
+              <span class="kpi-label">Avg Response Time</span>
+            </div>
+          </div>
+          <p class="settings-help">Incidents by type</p>
+          <div id="chartIncidentTypes" class="bar-chart"></div>
+        </div>
+
+        <div class="overview-columns">
+          <div class="form-box">
+            <h3 class="mb-20">Recent Incident Reports</h3>
+            <div id="offRecentIncidents">
+              <p class="meta">Loading...</p>
+            </div>
+          </div>
+
+          <div class="form-box">
+            <h3 class="mb-20">Recent Certificate Requests</h3>
+            <div id="offRecentRequests">
+              <p class="meta">Loading...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-box lf-widget">
+          <div class="lf-head">
+            <h3>Lost &amp; Found</h3>
+            <button type="button" class="btn btn-small" onclick="showOfficialSection('feed')">VIEW ALL</button>
+          </div>
+          <div id="offLostFound"><p class="meta">Loading...</p></div>
+        </div>
+      </section>
+
+      <!-- ===== CERTIFICATE REQUESTS ===== -->
+      <section id="sectionOffRequests" class="hidden">
+        <h1 class="admin-page-title">Certificate Requests</h1>
+        <p class="admin-page-sub">Review, approve, and print the certificates requested by residents.</p>
+
+        <div class="table-toolbar">
+          <label for="requestsSearch" class="hidden">Search requests</label>
+          <input type="text" id="requestsSearch" class="table-search" placeholder="Search requests..." autocomplete="off">
+          <select id="requestsStatusFilter" class="filter-select" aria-label="Filter by status">
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="ready">Ready for Pickup</option>
+            <option value="released">Released</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <select id="requestsTypeFilter" class="filter-select" aria-label="Filter by certificate type">
+            <option value="all">All Types</option>
+            <option value="indigency">Barangay Certificate of Indigency</option>
+            <option value="clearance">Barangay Clearance</option>
+            <option value="residency">Certificate of Residency</option>
+            <option value="goodmoral">Certificate of Good Moral Character</option>
+            <option value="business">Barangay Business Clearance</option>
+          </select>
+          <label class="filter-date">From <input type="date" id="requestsFrom"></label>
+          <label class="filter-date">To <input type="date" id="requestsTo"></label>
+          <button type="button" class="btn btn-small btn-success" id="requestsBulkReady">MARK SELECTED READY</button>
+          <button type="button" class="btn btn-small" id="exportReleasedBtn">EXPORT LOG</button>
+          <span class="table-count" id="requestsTableCount" aria-live="polite"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="table-check"></th>
+                <th>Reference No.</th>
+                <th>Resident</th>
+                <th>Certificate</th>
+                <th>Date Requested</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requestsTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== INCIDENT REPORTS ===== -->
+      <section id="sectionOffIncidents" class="hidden">
+        <h1 class="admin-page-title">Incident Reports</h1>
+        <p class="admin-page-sub">Accidents and emergencies reported by residents of your barangay. Respond promptly.</p>
+
+        <div class="table-toolbar">
+          <label for="incidentsSearch" class="hidden">Search incident reports</label>
+          <input type="text" id="incidentsSearch" class="table-search" placeholder="Search incident reports..." autocomplete="off">
+          <select id="incidentsStatusFilter" class="filter-select" aria-label="Filter by status">
+            <option value="all">All Statuses</option>
+            <option value="reported">Reported</option>
+            <option value="responding">Responding</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <select id="incidentsSeverityFilter" class="filter-select" aria-label="Filter by severity">
+            <option value="all">All Severities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <label class="filter-date">From <input type="date" id="incidentsFrom"></label>
+          <label class="filter-date">To <input type="date" id="incidentsTo"></label>
+          <button type="button" class="btn btn-small" id="exportIncidentsBtn">EXPORT CSV</button>
+          <span class="table-count" id="incidentsTableCount" aria-live="polite"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Reference No.</th>
+                <th>Reported By</th>
+                <th>Incident</th>
+                <th>Severity</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="incidentsTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== COMMUNITY FEED (Lost & Found + shares) ===== -->
+      <section id="sectionOffFeed" class="hidden">
+        <h1 class="admin-page-title">Community Feed</h1>
+        <p class="admin-page-sub">Lost &amp; found items and community posts shared by residents.</p>
+
+        <div class="community-feed-head">
+          <div class="filter-buttons community-feed-chips">
+            <button type="button" class="filter-btn active" data-feed-kind="all" onclick="setCommunityFeedFilter('all')">ALL</button>
+            <button type="button" class="filter-btn" data-feed-kind="lost" onclick="setCommunityFeedFilter('lost')">LOST</button>
+            <button type="button" class="filter-btn" data-feed-kind="found" onclick="setCommunityFeedFilter('found')">FOUND</button>
+            <button type="button" class="filter-btn" data-feed-kind="share" onclick="setCommunityFeedFilter('share')">SHARED</button>
+          </div>
+          <span class="table-count" id="communityFeedCount" aria-live="polite"></span>
+        </div>
+        <div class="feed-list" id="offPostsFeed">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== COMMUNITY NEWS (Facebook-style feed) ===== -->
+      <section id="sectionOffNews" class="hidden">
+        <h1 class="admin-page-title">Community News</h1>
+        <p class="admin-page-sub">Latest articles posted by the community office.</p>
+        <div class="feed-list" id="dashNewsList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== ANNOUNCEMENTS (Facebook-style feed) ===== -->
+      <section id="sectionOffAnnouncements" class="hidden">
+        <h1 class="admin-page-title">Announcements</h1>
+        <p class="admin-page-sub">Important notices and public information for residents.</p>
+        <div class="feed-list" id="dashAnnouncementsList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== UPCOMING EVENTS ===== -->
+      <section id="sectionOffEvents" class="hidden">
+        <h1 class="admin-page-title">Upcoming Events</h1>
+        <p class="admin-page-sub">Dates, times, and locations of community events.</p>
+        <div class="grid grid-3" id="dashEventsList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== COMMUNITY ACTIVITIES (Facebook-style feed) ===== -->
+      <section id="sectionOffActivities" class="hidden">
+        <h1 class="admin-page-title">Community Activities</h1>
+        <p class="admin-page-sub">Programs and activities you can join.</p>
+        <div class="feed-list" id="dashActivitiesList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== GALLERY ===== -->
+      <section id="sectionOffGallery" class="hidden">
+        <h1 class="admin-page-title">Gallery</h1>
+        <p class="admin-page-sub">Photos from community events and activities.</p>
+        <div class="gallery-grid" id="dashGalleryGrid">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== MY PROFILE ===== -->
+      <section id="sectionOffProfile" class="hidden profile-page">
+        <h1 class="admin-page-title">My Profile</h1>
+        <p class="admin-page-sub">Update your name, photo, contact details, and password.</p>
+
+        <div class="form-box has-close profile-card">
+          <button type="button" class="circle-close-btn" id="offProfileCloseBtn" aria-label="Close profile" title="Back to dashboard">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div class="alert alert-success" id="offProfileSuccess">
+            Your profile has been saved successfully.
+          </div>
+          <div class="alert alert-error" id="offProfileError">
+            Please check the form.
+          </div>
+
+          <form id="officialProfileForm" novalidate>
+            <div class="form-group">
+              <label>Profile Picture</label>
+              <div class="avatar-editor">
+                <span class="avatar-preview" id="offProfileAvatarPreview">O</span>
+                <div class="avatar-editor-actions">
+                  <input type="file" id="offProfileAvatarFile" accept="image/*" class="file-upload">
+                  <button type="button" class="btn btn-small btn-danger" id="offProfileAvatarRemove">REMOVE PHOTO</button>
+                  <p class="meta">Choose a photo from your device - it is cropped to a square and saved in your browser.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="offProfileName">Full Name</label>
+                <input type="text" id="offProfileName" placeholder="e.g. Maria Santos" maxlength="60">
+              </div>
+              <div class="form-group">
+                <label for="offProfileUsername">Username</label>
+                <input type="text" id="offProfileUsername" readonly>
+                <p class="meta">Username cannot be changed here. Ask the admin to rename it.</p>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="offProfileBarangay">Barangay</label>
+                <input type="text" id="offProfileBarangay" readonly>
+              </div>
+              <div class="form-group">
+                <label for="offProfileEmail">Email</label>
+                <input type="email" id="offProfileEmail" placeholder="office@email.com">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="offProfilePhone">Phone</label>
+              <input type="text" id="offProfilePhone" placeholder="09XX-XXX-XXXX">
+            </div>
+
+            <p class="profile-section-label">Change Password</p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="offProfileNewPassword">New Password (optional)</label>
+                <input type="password" id="offProfileNewPassword" placeholder="Leave blank to keep current password">
+              </div>
+              <div class="form-group">
+                <label for="offProfileConfirmPassword">Confirm New Password</label>
+                <input type="password" id="offProfileConfirmPassword" placeholder="Type the new password again">
+              </div>
+            </div>
+
+            <div class="profile-actions">
+              <button type="submit" class="btn btn-success">SAVE PROFILE</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

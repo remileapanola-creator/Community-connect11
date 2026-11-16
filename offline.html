@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Offline | Community Connect</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="app-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand">COMMUNITY CONNECT</a>
+    </div>
+  </header>
+
+  <main id="mainContent" tabindex="-1">
+    <section class="section">
+      <div class="container">
+        <div class="page-header" style="text-align:center;">
+          <h1>You are offline</h1>
+          <p style="margin-top:8px;">This page has not been saved for offline use yet. Check your connection and try again.</p>
+          <p style="margin-top:20px;">
+            <a href="index.html" class="btn">GO HOME</a>
+            <button type="button" class="btn btn-outline" id="retryBtn" style="margin-left:8px;">TRY AGAIN</button>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; 2026 Community Connect. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("retryBtn").addEventListener("click", function () {
+      location.reload();
+    });
+  </script>
+</body>
+</html>

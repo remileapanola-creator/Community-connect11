@@ -1,0 +1,42 @@
+{
+  "name": "Community Connect - News & Announcements",
+  "short_name": "Community Connect",
+  "description": "Community news, announcements, events, activities, and photos in one place.",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#1f4e79",
+  "theme_color": "#1f4e79",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Emergency Hotlines",
+      "short_name": "Hotlines",
+      "description": "Quick-dial numbers for barangay, police, health, fire, and rescue.",
+      "url": "hotlines.html"
+    },
+    {
+      "name": "Community News",
+      "short_name": "News",
+      "url": "news.html"
+    },
+    {
+      "name": "Announcements",
+      "short_name": "Alerts",
+      "url": "announcements.html"
+    }
+  ]
+}

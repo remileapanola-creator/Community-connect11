@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Connect | My Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="manifest" href="manifest.json">
+  <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("communityTheme")==="light"?"light":"dark")}catch(e){}</script>
+</head>
+<body class="user-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <!-- User top header -->
+  <header class="admin-header">
+    <div class="logo">
+      <div class="logo-mark">CC</div>
+      <div class="logo-text">Community Connect<span>My Dashboard</span></div>
+    </div>
+    <div class="admin-user">
+      <div class="notif-wrap">
+        <button class="notif-bell" id="userNotifBtn" type="button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-dot" id="userNotifDot" hidden></span>
+        </button>
+        <div class="notif-panel hidden" id="userNotifPanel">
+          <div class="notif-panel-head">
+            <strong>NOTIFICATIONS</strong>
+            <button class="notif-view-all" type="button">VIEW ALL</button>
+          </div>
+          <div class="notif-panel-list" id="userNotifList"></div>
+        </div>
+      </div>
+      <div class="header-account">
+        <button class="header-account-btn" id="userAccountBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+          <span class="admin-avatar" id="dashHeaderAvatar">U</span>
+          <span class="header-account-name">
+            <span id="dashHeaderName">User</span>
+            <svg class="header-account-caret" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </button>
+        <div class="header-account-menu hidden" id="userAccountMenu">
+          <div class="account-menu-head">
+            <span class="account-menu-avatar" id="userMenuAvatar">U</span>
+            <div class="account-menu-id">
+              <strong id="userMenuName">User</strong>
+              <span class="account-menu-email" id="userMenuEmail">resident@community.ph</span>
+            </div>
+          </div>
+          <button class="header-account-item" id="userAccountProfile" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            My Profile
+          </button>
+          <button class="header-account-item" id="userAccountSettings" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </button>
+          <div class="header-account-sep"></div>
+          <button class="header-account-item header-account-signout" id="userAccountLogout" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </button>
+        </div>
+      </div>
+      <button class="admin-nav-toggle" id="userNavToggle" type="button" aria-label="Open menu">&#9776;</button>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+
+    <!-- User side navigation -->
+    <nav class="admin-sidebar" id="userSidebar">
+      <span class="sidebar-label">Overview</span>
+      <a href="#home" class="active" aria-current="page" data-usection="home"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>HOME / OVERVIEW</a>
+      <span class="sidebar-label">Browse</span>
+      <a href="#news" data-usection="news"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2-2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>COMMUNITY NEWS</a>
+      <a href="#announcements" data-usection="announcements"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>ANNOUNCEMENTS</a>
+      <a href="#events" data-usection="events"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>UPCOMING EVENTS</a>
+      <a href="#activities" data-usection="activities"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>ACTIVITIES</a>
+      <a href="#gallery" data-usection="gallery"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>GALLERY</a>
+      <button type="button" class="sidebar-label sidebar-toggle" id="barangayServicesToggle" aria-expanded="false" aria-controls="barangayServicesMenu">
+        Barangay Services
+        <svg class="sidebar-caret" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div id="barangayServicesMenu" class="hidden">
+        <a href="#certificates" data-usection="certificates"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span>REQUEST CERTIFICATE</a>
+        <a href="#incidents" data-usection="incidents"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>REPORT INCIDENT</a>
+      </div>
+      <span class="sidebar-label">My Account</span>
+      <a href="#saved" data-usection="saved"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>SAVED ITEMS</a>
+      <a href="news-ai.html"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg></span>AI ASSISTANT</a>
+      <span class="sidebar-label">Website</span>
+      <a href="index.html" class="sidebar-back"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></span>BACK TO WEBSITE</a>
+    </nav>
+
+    <!-- User main content -->
+    <main class="admin-main" id="mainContent" tabindex="-1">
+
+      <!-- ===== LIVE BROADCAST (only shown while a broadcast is live) ===== -->
+      <section id="liveSection" class="live-section hidden" aria-live="polite">
+        <div id="liveCard" class="live-card hidden">
+          <div class="live-card-head">
+            <span class="live-badge live-badge-pulse">LIVE</span>
+            <div class="live-head-text">
+              <h2 id="liveTitleOut" class="live-title"></h2>
+              <p class="live-sub">
+                <span class="badge" id="liveCategoryOut">Community</span>
+                <span id="liveHostOut">Community Office</span>
+              </p>
+            </div>
+          </div>
+          <div class="live-video-wrap">
+            <video id="livePlayer" class="live-player" autoplay playsinline controls></video>
+            <div id="livePlayerOverlay" class="live-overlay hidden">
+              <p id="liveOverlayText">Connecting to the live broadcast...</p>
+            </div>
+          </div>
+          <p id="liveDescOut" class="live-desc"></p>
+          <div class="live-meta-row">
+            <span class="live-stat" id="liveViewersOut">0 watching</span>
+            <span class="live-stat" id="liveDurationOut">00:00</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== HOME / OVERVIEW ===== -->
+      <section id="sectionDashHome">
+        <h1 class="admin-page-title" id="dashWelcome">Welcome!</h1>
+        <p class="admin-page-sub">Here is the latest from your community at a glance.</p>
+
+        <div class="stats-grid">
+          <div class="stat-card st-blue">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statNews">0</span>
+              <span class="stat-label">News</span>
+            </div>
+          </div>
+          <div class="stat-card st-orange">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statAnnouncements">0</span>
+              <span class="stat-label">Announcements</span>
+            </div>
+          </div>
+          <div class="stat-card st-green">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statEvents">0</span>
+              <span class="stat-label">Upcoming Events</span>
+            </div>
+          </div>
+          <div class="stat-card st-red">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statActivities">0</span>
+              <span class="stat-label">Community Activities</span>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="admin-page-title sub-heading">Quick Actions</h2>
+        <div class="quick-actions">
+          <button type="button" class="quick-action" onclick="showUserSection('feed')">
+            <span class="qa-icon qa-blue" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2z"/><line x1="8" y1="10" x2="16" y2="10"/></svg></span>
+            <span>Create a Post</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showUserSection('incidents')">
+            <span class="qa-icon qa-red" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+            <span>Report Incident</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showUserSection('certificates')">
+            <span class="qa-icon qa-green" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            <span>Request Certificate</span>
+          </button>
+          <a class="quick-action" href="hotlines.html">
+            <span class="qa-icon qa-orange" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+            <span>Emergency Hotlines</span>
+          </a>
+        </div>
+
+        <div class="overview-columns">
+          <div class="form-box">
+            <h3 class="mb-20">Latest Announcement</h3>
+            <div id="dashLatestAnnouncement">
+              <p>Loading...</p>
+            </div>
+          </div>
+          <div class="form-box">
+            <h3 class="mb-20">Next Event</h3>
+            <div id="dashNextEvent">
+              <div id="nextEventDetails">
+                <div class="event-meta"><span class="event-badge">EVENT</span> <span class="event-date" id="nextEventDate">November 6, 2026</span></div>
+                <h4 id="nextEventTitle">Youth Leadership Workshop</h4>
+                <p class="event-time" id="nextEventTime">Time: 9:00 AM</p>
+                <p class="event-location" id="nextEventLocation">Location: Youth Center</p>
+                <div class="countdown-box" id="nextEventCountdown">
+                  <div class="countdown-item"><span class="countdown-num" id="cdDays">00</span><span class="countdown-label">Days</span></div>
+                  <div class="countdown-item"><span class="countdown-num" id="cdHours">00</span><span class="countdown-label">Hours</span></div>
+                  <div class="countdown-item"><span class="countdown-num" id="cdMins">00</span><span class="countdown-label">Mins</span></div>
+                  <div class="countdown-item"><span class="countdown-num" id="cdSecs">00</span><span class="countdown-label">Secs</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-box lf-widget">
+          <div class="lf-head">
+            <h3>Lost &amp; Found</h3>
+            <button type="button" class="btn btn-small" onclick="showUserSection('feed')">VIEW ALL</button>
+          </div>
+          <div id="dashLostFound"><p class="meta">Loading...</p></div>
+        </div>
+
+        <div class="user-welcome">
+          <h2>Stay Informed. Stay Connected.</h2>
+          <p>Use the menu on the left to read community news, announcements,
+             events, activities, and photos. Keep your profile updated under
+             My Profile, and check Notifications for the latest important
+             updates.</p>
+        </div>
+      </section>
+
+      <!-- ===== COMMUNITY NEWS ===== -->
+      <section id="sectionDashNews" class="hidden">
+        <h1 class="admin-page-title">Community News</h1>
+        <p class="admin-page-sub">Latest articles posted by the community office.</p>
+        <div id="dashNewsList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== ANNOUNCEMENTS ===== -->
+      <section id="sectionDashAnnouncements" class="hidden">
+        <h1 class="admin-page-title">Announcements</h1>
+        <p class="admin-page-sub">Important notices and public information for residents.</p>
+        <div id="dashAnnouncementsList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== UPCOMING EVENTS ===== -->
+      <section id="sectionDashEvents" class="hidden">
+        <h1 class="admin-page-title">Upcoming Events</h1>
+        <p class="admin-page-sub">Dates, times, and locations of community events.</p>
+        <div class="grid grid-3" id="dashEventsList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== COMMUNITY ACTIVITIES ===== -->
+      <section id="sectionDashActivities" class="hidden">
+        <h1 class="admin-page-title">Community Activities</h1>
+        <p class="admin-page-sub">Programs and activities you can join.</p>
+        <div class="feed-list" id="dashActivitiesList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== GALLERY ===== -->
+      <section id="sectionDashGallery" class="hidden">
+        <h1 class="admin-page-title">Gallery</h1>
+        <p class="admin-page-sub">Photos from community events and activities.</p>
+        <div class="gallery-grid" id="dashGalleryGrid">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== SAVED ITEMS ===== -->
+      <section id="sectionDashSaved" class="hidden">
+        <h1 class="admin-page-title">Saved Items</h1>
+        <p class="admin-page-sub">News and announcements you saved for later reading.</p>
+        <div id="dashSavedList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== NOTIFICATIONS ===== -->
+      <section id="sectionDashNotifications" class="hidden">
+        <h1 class="admin-page-title">Notifications</h1>
+        <p class="admin-page-sub">Important announcements and upcoming events, newest first.</p>
+        <div id="dashNotifications">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== CERTIFICATE REQUESTS ===== -->
+      <section id="sectionDashCertificates" class="hidden">
+        <h1 class="admin-page-title">Barangay Certificates</h1>
+        <p class="admin-page-sub">Request barangay certificates online. The Barangay Officials are notified automatically.</p>
+
+        <div class="form-box" style="max-width:680px;">
+          <h3>Request a Certificate</h3>
+          <form id="certificateForm" novalidate>
+            <div class="form-group">
+              <label for="certType">Certificate Type</label>
+              <select id="certType">
+                <option value="indigency">Barangay Certificate of Indigency</option>
+                <option value="clearance">Barangay Clearance</option>
+                <option value="residency">Certificate of Residency</option>
+                <option value="goodmoral">Certificate of Good Moral Character</option>
+                <option value="business">Barangay Business Clearance</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="certBarangaySearch">Your Barangay</label>
+              <div class="combo" id="certBarangayCombo">
+                <input type="text" id="certBarangaySearch" placeholder="Type to search your barangay..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="certBarangayList" aria-autocomplete="list">
+                <input type="hidden" id="certBarangay">
+                <ul class="combo-list hidden" id="certBarangayList" role="listbox" aria-label="Barangay suggestions"></ul>
+              </div>
+              <p class="meta" id="certBarangayNote">Search and select your barangay. Your request is sent only to that barangay's officials.</p>
+            </div>
+
+            <div class="form-group">
+              <label for="certPurpose">Purpose of Request</label>
+              <input type="text" id="certPurpose" placeholder="e.g. For employment requirements" maxlength="120">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="certAge">Age</label>
+                <input type="number" id="certAge" min="1" max="120" placeholder="e.g. 25">
+              </div>
+              <div class="form-group">
+                <label for="certCivilStatus">Civil Status</label>
+                <select id="certCivilStatus">
+                  <option>Single</option>
+                  <option>Married</option>
+                  <option>Widowed</option>
+                  <option>Separated</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="certAddress">Complete Address</label>
+              <input type="text" id="certAddress" placeholder="Purok / Street / Barangay" maxlength="120">
+            </div>
+
+            <div class="form-group">
+              <label for="certContact">Contact Number</label>
+              <input type="text" id="certContact" placeholder="09XX-XXX-XXXX" maxlength="20">
+            </div>
+
+            <div class="form-group hidden" data-cert-field="residency">
+              <label for="certYearsResident">Years of Residency</label>
+              <input type="number" id="certYearsResident" min="0" max="120" placeholder="e.g. 5">
+            </div>
+
+            <div class="form-group hidden" data-cert-field="business">
+              <label for="certBusinessName">Business Name</label>
+              <input type="text" id="certBusinessName" placeholder="e.g. Santos Sari-Sari Store" maxlength="80">
+            </div>
+
+            <button type="submit" class="btn btn-success">SUBMIT REQUEST</button>
+          </form>
+        </div>
+
+        <h2 class="admin-page-title sub-heading">My Certificate Requests</h2>
+        <p class="admin-page-sub">Track the status of the certificates you requested.</p>
+        <div class="table-toolbar">
+          <span class="table-count" id="myRequestsCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Reference No.</th>
+                <th>Certificate</th>
+                <th>Date Requested</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="myRequestsTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== INCIDENT REPORTS ===== -->
+      <section id="sectionDashIncidents" class="hidden">
+        <h1 class="admin-page-title">Report an Incident</h1>
+        <p class="admin-page-sub">Report accidents and other emergencies in your area. The Barangay Officials are notified automatically.</p>
+
+        <div class="form-box" style="max-width:680px;">
+          <h3>Report an Incident</h3>
+          <form id="incidentForm" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="incidentType">Incident Type</label>
+                <select id="incidentType">
+                  <option value="accident">Vehicular Accident</option>
+                  <option value="fire">Fire</option>
+                  <option value="flood">Flood / Typhoon</option>
+                  <option value="crime">Crime / Theft</option>
+                  <option value="medical">Medical Emergency</option>
+                  <option value="utility">Utility / Power Problem</option>
+                  <option value="other">Other Emergency</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="incidentSeverity">Severity</label>
+                <select id="incidentSeverity">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="incidentBarangaySearch">Your Barangay</label>
+              <div class="combo" id="incidentBarangayCombo">
+                <input type="text" id="incidentBarangaySearch" placeholder="Type to search your barangay..." autocomplete="off" role="combobox" aria-expanded="false" aria-controls="incidentBarangayList" aria-autocomplete="list">
+                <input type="hidden" id="incidentBarangay">
+                <ul class="combo-list hidden" id="incidentBarangayList" role="listbox" aria-label="Barangay suggestions"></ul>
+              </div>
+              <p class="meta">Search and select your barangay. Your report is sent only to that barangay's officials.</p>
+            </div>
+
+            <div class="form-group">
+              <label for="incidentLocation">Location</label>
+              <input type="text" id="incidentLocation" placeholder="e.g. Purok 3, near the basketball court" maxlength="120">
+              <label for="incidentLandmark" class="mt-10">Landmark (optional)</label>
+              <input type="text" id="incidentLandmark" placeholder="e.g. beside the covered court" maxlength="120">
+              <div class="location-row">
+                <button type="button" class="btn btn-small" id="incidentUseLocation">USE MY LOCATION</button>
+                <input type="text" id="incidentCoords" class="coords-input" placeholder="Coordinates (optional)" maxlength="40" readonly>
+              </div>
+              <p class="meta" id="incidentLocationNote"></p>
+            </div>
+
+            <div class="form-group">
+              <label for="incidentPhoto">Photo (optional)</label>
+              <input type="file" id="incidentPhoto" accept="image/*">
+              <img id="incidentPhotoPreview" class="incident-photo-preview hidden" alt="">
+            </div>
+
+            <div class="form-group">
+              <label for="incidentDescription">Describe what happened</label>
+              <textarea id="incidentDescription" rows="4" placeholder="What happened? Include any details that can help the officials respond." maxlength="600"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="incidentAddress">Your Address</label>
+              <input type="text" id="incidentAddress" placeholder="Purok / Street / Barangay" maxlength="120">
+            </div>
+
+            <div class="form-group">
+              <label for="incidentContact">Contact Number</label>
+              <input type="text" id="incidentContact" placeholder="09XX-XXX-XXXX" maxlength="20">
+            </div>
+
+            <button type="submit" class="btn btn-danger">SUBMIT REPORT</button>
+          </form>
+        </div>
+
+        <h2 class="admin-page-title sub-heading">My Incident Reports</h2>
+        <p class="admin-page-sub">Track the status of the incidents you reported.</p>
+        <div class="table-toolbar">
+          <span class="table-count" id="myIncidentsCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Reference No.</th>
+                <th>Incident</th>
+                <th>Date Reported</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="myIncidentsTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== COMMUNITY FEED (Lost & Found + shares) ===== -->
+      <section id="sectionDashFeed" class="hidden">
+        <h1 class="admin-page-title">Community Feed</h1>
+        <p class="admin-page-sub">Share lost &amp; found items and community updates with your neighbors.</p>
+
+        <div class="form-box post-composer">
+          <h3>Create a Post</h3>
+          <form id="userPostForm" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="postKind">Post Type</label>
+                <select id="postKind">
+                  <option value="lost">Lost Item</option>
+                  <option value="found">Found Item</option>
+                  <option value="share">Community Share</option>
+                </select>
+              </div>
+              <div class="form-group" data-post-field="lost found">
+                <label for="postCategory">Item Type</label>
+                <select id="postCategory">
+                  <option value="Mobile Phone">Mobile Phone</option>
+                  <option value="Wallet">Wallet</option>
+                  <option value="ID / Documents">ID / Documents</option>
+                  <option value="Keys">Keys</option>
+                  <option value="Bag">Bag</option>
+                  <option value="Jewelry">Jewelry</option>
+                  <option value="Pet">Pet</option>
+                  <option value="Bicycle">Bicycle</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="postTitle">Title</label>
+              <input type="text" id="postTitle" placeholder="e.g. Lost black wallet near the plaza" maxlength="100">
+            </div>
+
+            <div class="form-group">
+              <label for="postDescription">Description</label>
+              <textarea id="postDescription" rows="3" placeholder="Add details that can help others identify or locate the item..." maxlength="600"></textarea>
+            </div>
+
+            <div class="form-row" data-post-field="lost found">
+              <div class="form-group">
+                <label for="postLocation">Last Seen / Found At</label>
+                <input type="text" id="postLocation" placeholder="e.g. Purok 3, near the covered court" maxlength="120">
+              </div>
+              <div class="form-group">
+                <label for="postDate">Date</label>
+                <input type="date" id="postDate">
+              </div>
+            </div>
+
+            <div class="form-group" data-post-field="lost found">
+              <label for="postContact">Contact Info</label>
+              <input type="text" id="postContact" placeholder="Phone or how to reach you" maxlength="80">
+            </div>
+
+            <div class="form-group">
+              <label for="userPostImages">Photos (up to 4)</label>
+              <input type="file" id="userPostImages" accept="image/*" multiple>
+              <div class="post-preview" id="userPostPreview"></div>
+            </div>
+
+            <button type="submit" class="btn btn-success">POST TO COMMUNITY</button>
+          </form>
+        </div>
+
+        <div class="community-feed-head">
+          <div class="filter-buttons community-feed-chips">
+            <button type="button" class="filter-btn active" data-feed-kind="all" onclick="setCommunityFeedFilter('all')">ALL</button>
+            <button type="button" class="filter-btn" data-feed-kind="lost" onclick="setCommunityFeedFilter('lost')">LOST</button>
+            <button type="button" class="filter-btn" data-feed-kind="found" onclick="setCommunityFeedFilter('found')">FOUND</button>
+            <button type="button" class="filter-btn" data-feed-kind="share" onclick="setCommunityFeedFilter('share')">SHARED</button>
+          </div>
+          <span class="table-count" id="communityFeedCount" aria-live="polite"></span>
+        </div>
+        <div class="feed-list" id="userPostsFeed">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== MY PROFILE ===== -->
+      <section id="sectionDashProfile" class="hidden profile-page">
+        <h1 class="admin-page-title">My Profile</h1>
+        <p class="admin-page-sub">Update your contact details and password.</p>
+
+        <div class="form-box has-close profile-card">
+          <button type="button" class="circle-close-btn" id="profileCloseBtn" aria-label="Close profile" title="Back to dashboard">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div class="alert alert-success" id="profileSuccess">
+            Your profile has been saved successfully.
+          </div>
+          <div class="alert alert-error" id="profileError">
+            Please check the form.
+          </div>
+
+          <form id="profileForm" novalidate>
+            <div class="form-group">
+              <label>Profile Picture</label>
+              <div class="avatar-editor">
+                <span class="avatar-preview" id="profileAvatarPreview">U</span>
+                <div class="avatar-editor-actions">
+                  <input type="file" id="profileAvatarFile" accept="image/*" class="file-upload">
+                  <button type="button" class="btn btn-small btn-danger" id="profileAvatarRemove">REMOVE PHOTO</button>
+                  <p class="meta">Choose a photo from your device - it is cropped to a square and saved in your browser.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="profileDisplayName">Display Name</label>
+                <input type="text" id="profileDisplayName" placeholder="Name shown on your comments" maxlength="40">
+              </div>
+              <div class="form-group">
+                <label for="profileUsername">Username</label>
+                <input type="text" id="profileUsername" readonly>
+                <p class="meta">Username cannot be changed.</p>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="profilePhone">Phone</label>
+                <input type="text" id="profilePhone" placeholder="09XX-XXX-XXXX">
+              </div>
+              <div class="form-group">
+                <label for="profileAddress">Address</label>
+                <input type="text" id="profileAddress" placeholder="Purok / Street / Barangay">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="profileBarangay">Barangay</label>
+              <input type="text" id="profileBarangay" placeholder="e.g. Barangay Central" maxlength="80">
+              <p class="meta">Used to send you emergency alerts for your barangay.</p>
+            </div>
+
+            <p class="profile-section-label">Change Password</p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="profileNewPassword">New Password (optional)</label>
+                <input type="password" id="profileNewPassword" placeholder="Leave blank to keep current password">
+              </div>
+              <div class="form-group">
+                <label for="profileConfirmPassword">Confirm New Password</label>
+                <input type="password" id="profileConfirmPassword" placeholder="Type the new password again">
+              </div>
+            </div>
+
+            <div class="profile-actions">
+              <button type="submit" class="btn btn-success">SAVE PROFILE</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

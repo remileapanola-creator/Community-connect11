@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Connect | Admin Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="manifest" href="manifest.json">
+  <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("communityTheme")==="light"?"light":"dark")}catch(e){}</script>
+</head>
+<body class="admin-body">
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <!-- Admin top header -->
+  <header class="admin-header">
+    <div class="logo">
+      <img class="logo-mark-img" src="images/logo.svg" alt="" width="48" height="48">
+      <div class="logo-text">Community Connect<span>Administration</span></div>
+    </div>
+    <div class="admin-user">
+      <div class="notif-wrap">
+        <button class="notif-bell" id="adminNotifBtn" type="button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-dot" id="adminNotifDot" hidden></span>
+        </button>
+        <div class="notif-panel hidden" id="adminNotifPanel">
+          <div class="notif-panel-head">
+            <strong>NOTIFICATIONS</strong>
+            <button class="notif-mark-all" type="button">MARK ALL READ</button>
+            <button class="notif-view-all" type="button">VIEW ALL</button>
+          </div>
+          <div class="notif-panel-list" id="adminNotifList"></div>
+        </div>
+      </div>
+      <div class="header-account">
+        <button class="header-account-btn" id="adminAccountBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+          <span class="admin-avatar" id="adminHeaderAvatar">A</span>
+          <span class="header-account-name">
+            <span id="adminHeaderName">Welcome, Admin</span>
+            <svg class="header-account-caret" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </button>
+        <div class="header-account-menu hidden" id="adminAccountMenu">
+          <div class="account-menu-head">
+            <span class="account-menu-avatar" id="adminMenuAvatar">A</span>
+            <div class="account-menu-id">
+              <strong id="adminMenuName">Admin</strong>
+              <span class="account-menu-email" id="adminMenuEmail">admin@community.ph</span>
+            </div>
+          </div>
+          <button class="header-account-item" id="adminAccountProfile" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            My Profile
+          </button>
+          <button class="header-account-item" id="adminAccountSettings" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </button>
+          <div class="header-account-sep"></div>
+          <button class="header-account-item header-account-signout" id="adminAccountLogout" type="button">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </button>
+        </div>
+      </div>
+      <button class="admin-nav-toggle" id="adminNavToggle" type="button" aria-label="Open menu">&#9776;</button>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+
+    <!-- Admin side navigation -->
+    <nav class="admin-sidebar" id="adminSidebar">
+      <span class="sidebar-label">Overview</span>
+      <a href="#dashboard" class="active" aria-current="page" data-section="dashboard"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>DASHBOARD</a>
+      <span class="sidebar-label">Manage Content</span>
+      <a href="#news" data-section="news"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2-2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>NEWS</a>
+      <a href="#announcements" data-section="announcements"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>ANNOUNCEMENTS</a>
+      <a href="#events" data-section="events"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>EVENTS</a>
+      <a href="#activities" data-section="activities"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>ACTIVITIES</a>
+      <a href="#gallery" data-section="gallery"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>GALLERY</a>
+      <span class="sidebar-label">Community</span>
+      <a href="#users" data-section="users"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>MANAGE USERS</a>
+      <a href="#posts" data-section="posts"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="13" y2="17"/></svg></span>COMMUNITY POSTS</a>
+      <a href="#audit" data-section="audit"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>AUDIT TRAIL</a>
+      <span class="sidebar-label">Website</span>
+      <a href="index.html" class="sidebar-back"><span class="side-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></span>BACK TO WEBSITE</a>
+    </nav>
+
+    <!-- Admin main content -->
+    <main class="admin-main" id="mainContent" tabindex="-1">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section id="sectionDashboard">
+        <h1 class="admin-page-title">Dashboard</h1>
+        <p class="admin-page-sub">Overview of all community content on Community Connect.</p>
+
+        <div class="live-cta">
+          <button type="button" class="btn btn-danger" id="liveGoBtn">GO LIVE</button>
+          <button type="button" class="btn emergency-broadcast-btn" id="emergencyBroadcastBtn">EMERGENCY BROADCAST</button>
+          <span class="meta" id="liveCtaHint">Broadcast camera video and audio to the community in real time.</span>
+        </div>
+
+        <h2 class="admin-page-title sub-heading">Quick Actions</h2>
+        <div class="quick-actions">
+          <button type="button" class="quick-action" onclick="showAdminSection('news')">
+            <span class="qa-icon qa-blue" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Z"/><path d="M18 14h-8"/><path d="M15 18h-5"/></svg></span>
+            <span>Add News</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showAdminSection('announcements')">
+            <span class="qa-icon qa-orange" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>
+            <span>Add Announcement</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showAdminSection('posts')">
+            <span class="qa-icon qa-purple" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="17" y2="13"/></svg></span>
+            <span>Community Posts</span>
+          </button>
+          <button type="button" class="quick-action" onclick="showAdminSection('users')">
+            <span class="qa-icon qa-green" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            <span>Manage Users</span>
+          </button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card st-blue">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statNews">0</span>
+              <span class="stat-label">News</span>
+            </div>
+          </div>
+          <div class="stat-card st-orange">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statAnnouncements">0</span>
+              <span class="stat-label">Announcements</span>
+            </div>
+          </div>
+          <div class="stat-card st-green">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statEvents">0</span>
+              <span class="stat-label">Upcoming Events</span>
+            </div>
+          </div>
+          <div class="stat-card st-red">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statActivities">0</span>
+              <span class="stat-label">Community Activities</span>
+            </div>
+          </div>
+          <div class="stat-card st-navy">
+            <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            <div class="stat-info">
+              <span class="stat-number" id="statUsers">0</span>
+              <span class="stat-label">Registered Users</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="form-box chart-card">
+            <h3>Content by Type</h3>
+            <p class="meta">How much of each content type is stored in this browser.</p>
+            <div id="chartContentMix" class="chart-bars">
+              <!-- Filled by JavaScript -->
+            </div>
+          </div>
+          <div class="form-box chart-card">
+            <h3>Posts per Month (last 6 months)</h3>
+            <p class="meta">News, announcements, events, activities, and photos combined.</p>
+            <div id="chartMonthly" class="chart-bars">
+              <!-- Filled by JavaScript -->
+            </div>
+          </div>
+          <div class="form-box chart-card">
+            <h3>News Views (last 7 days)</h3>
+            <p class="meta">How often news articles were opened each day.</p>
+            <div id="chartViews" class="chart-bars">
+              <!-- Filled by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <div class="overview-columns">
+          <div class="form-box lf-widget">
+            <div class="lf-head">
+              <h3>Lost &amp; Found</h3>
+              <button type="button" class="btn btn-small" onclick="showAdminSection('posts')">VIEW ALL</button>
+            </div>
+            <div id="adminLostFound"><p class="meta">Loading...</p></div>
+          </div>
+
+          <div class="form-box">
+          <h3 class="mb-20">About this Admin Panel</h3>
+          <p class="meta">Use the menu on the left to manage community information.
+             Everything you add, edit, or delete is saved in the browser's
+             LocalStorage and shown on the public website right away.</p>
+          <p class="meta mt-20">Example flow:</p>
+          <p class="meta">Admin adds announcement &rarr; saved to LocalStorage &rarr;
+             user opens Announcements page &rarr; new announcement appears.</p>
+        </div>
+      </section>
+
+      <!-- ===== NEWS MANAGEMENT ===== -->
+      <section id="sectionNews" class="hidden">
+        <h1 class="admin-page-title">Manage News</h1>
+        <p class="admin-page-sub">Add, edit, or remove news articles shown on the website.</p>
+
+        <!-- Add / Edit news form -->
+        <div class="form-box mb-20">
+          <h3 id="newsFormTitle">Add News</h3>
+          <hr style="border:none;border-top:1px solid #d9dee3;margin:12px 0;">
+          <form id="newsForm" novalidate>
+            <div class="form-group">
+              <label for="newsTitle">News Title</label>
+              <input type="text" id="newsTitle" placeholder="Enter news title">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="newsCategory">Category</label>
+                <select id="newsCategory">
+                  <option value="Community">Community</option>
+                  <option value="Events">Events</option>
+                  <option value="Health">Health</option>
+                  <option value="Education">Education</option>
+                  <option value="Public Notice">Public Notice</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="newsDate">Date</label>
+                <input type="date" id="newsDate">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="newsDescription">Description</label>
+              <textarea id="newsDescription" placeholder="Short description of the news"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="newsImageFile">Upload Photos (recommended)</label>
+              <input type="file" id="newsImageFile" accept="image/*" class="file-upload" multiple>
+              <input type="hidden" id="newsImagesJson">
+              <img id="newsImagePreview" class="img-preview" alt="Image preview">
+              <div id="newsImageStrip" class="img-strip" aria-live="polite"></div>
+              <p id="newsImageCount" class="meta img-count"></p>
+              <p class="meta">Pick one or more photos from your device - each is resized automatically and saved in the browser. You can select up to 6.</p>
+            </div>
+            <div class="form-group">
+              <label for="newsImage">Or enter image paths</label>
+              <input type="text" id="newsImage" placeholder="images/community-01.jpg">
+              <p class="meta">Use a local file, or several separated by commas: images/a.jpg, images/b.jpg</p>
+            </div>
+            <div class="form-group">
+              <label for="newsVideoFile">Add Videos (optional)</label>
+              <input type="file" id="newsVideoFile" accept="video/*" class="file-upload" multiple>
+              <video id="newsVideoPreview" class="video-preview" controls muted playsinline></video>
+              <p class="meta" id="newsVideoHint">Pick one or more short videos from your device (MP4, WEBM, or OGG) - they are saved in the browser.</p>
+            </div>
+            <div class="form-group">
+              <label for="newsVideo">Or enter a video path / link</label>
+              <input type="text" id="newsVideo" placeholder="videos/community-update.mp4 or https://.../video.mp4">
+              <p class="meta">Use a local file or a direct video link (MP4, WEBM, or OGG).</p>
+            </div>
+            <div class="action-buttons">
+              <button type="submit" class="btn btn-success" id="newsSubmitBtn">ADD NEWS</button>
+              <button type="button" class="btn hidden" id="newsCancelBtn">CANCEL EDIT</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- News table -->
+        <div class="table-toolbar">
+          <label for="newsTableSearch" class="hidden">Search news</label>
+          <input type="text" id="newsTableSearch" class="table-search" placeholder="Search news..." autocomplete="off">
+          <span class="table-count" id="newsTableCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="newsTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== ANNOUNCEMENT MANAGEMENT ===== -->
+      <section id="sectionAnnouncements" class="hidden">
+        <h1 class="admin-page-title">Manage Announcements</h1>
+        <p class="admin-page-sub">Post important notices and public information for residents.</p>
+
+        <!-- Add / Edit announcement form -->
+        <div class="form-box mb-20">
+          <h3 id="annFormTitle">Add Announcement</h3>
+          <hr style="border:none;border-top:1px solid #d9dee3;margin:12px 0;">
+          <form id="annForm" novalidate>
+            <div class="form-group">
+              <label for="annTitle">Announcement Title</label>
+              <input type="text" id="annTitle" placeholder="Enter announcement title">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="annCategory">Category</label>
+                <select id="annCategory">
+                  <option value="Community">Community</option>
+                  <option value="Events">Events</option>
+                  <option value="Health">Health</option>
+                  <option value="Education">Education</option>
+                  <option value="Public Notice">Public Notice</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="annDate">Date</label>
+                <input type="date" id="annDate">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="annStatus">Status</label>
+              <select id="annStatus">
+                <option value="Important">Important</option>
+                <option value="Upcoming">Upcoming</option>
+                <option value="Active">Active</option>
+                <option value="Notice">Notice</option>
+                <option value="Emergency">Emergency (shows red alert banner)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="annDescription">Description</label>
+              <textarea id="annDescription" placeholder="Announcement details"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="annImageFile">Upload Photos (recommended)</label>
+              <input type="file" id="annImageFile" accept="image/*" class="file-upload" multiple>
+              <input type="hidden" id="annImagesJson">
+              <img id="annImagePreview" class="img-preview" alt="Image preview">
+              <div id="annImageStrip" class="img-strip" aria-live="polite"></div>
+              <p id="annImageCount" class="meta img-count"></p>
+              <p class="meta">Pick one or more photos from your device - each is resized automatically and saved in the browser. You can select up to 6.</p>
+            </div>
+            <div class="form-group">
+              <label for="annImage">Or enter image paths</label>
+              <input type="text" id="annImage" placeholder="images/community-01.jpg">
+              <p class="meta">Use a local file, or several separated by commas: images/a.jpg, images/b.jpg</p>
+            </div>
+            <div class="form-group">
+              <label for="annVideoFile">Add Videos (optional)</label>
+              <input type="file" id="annVideoFile" accept="video/*" class="file-upload" multiple>
+              <video id="annVideoPreview" class="video-preview" controls muted playsinline></video>
+              <p class="meta" id="annVideoHint">Pick one or more short videos from your device (MP4, WEBM, or OGG) - they are saved in the browser.</p>
+            </div>
+            <div class="form-group">
+              <label for="annVideo">Or enter a video path / link</label>
+              <input type="text" id="annVideo" placeholder="videos/community-update.mp4 or https://.../video.mp4">
+              <p class="meta">Use a local file or a direct video link (MP4, WEBM, or OGG).</p>
+            </div>
+            <div class="action-buttons">
+              <button type="submit" class="btn btn-success" id="annSubmitBtn">ADD ANNOUNCEMENT</button>
+              <button type="button" class="btn hidden" id="annCancelBtn">CANCEL EDIT</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Announcement table -->
+        <div class="table-toolbar">
+          <label for="annTableSearch" class="hidden">Search announcements</label>
+          <input type="text" id="annTableSearch" class="table-search" placeholder="Search announcements..." autocomplete="off">
+          <span class="table-count" id="annTableCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="annTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== EVENT MANAGEMENT ===== -->
+      <section id="sectionEvents" class="hidden">
+        <h1 class="admin-page-title">Manage Events</h1>
+        <p class="admin-page-sub">Schedule events with dates, times, and locations.</p>
+
+        <!-- RSVP attendance tracker summary -->
+        <div class="rsvp-summary" id="rsvpSummary" aria-live="polite">
+          <span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <div class="rsvp-summary-text">
+            <strong id="rsvpSummaryHead">RSVP attendance</strong>
+            <span class="meta" id="rsvpSummaryBody"></span>
+          </div>
+        </div>
+
+        <!-- Add / Edit event form -->
+        <div class="form-box mb-20">
+          <h3 id="eventFormTitle">Add Event</h3>
+          <hr style="border:none;border-top:1px solid #d9dee3;margin:12px 0;">
+          <form id="eventForm" novalidate>
+            <div class="form-group">
+              <label for="eventName">Event Name</label>
+              <input type="text" id="eventName" placeholder="Enter event name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="eventDate">Date</label>
+                <input type="date" id="eventDate">
+              </div>
+              <div class="form-group">
+                <label for="eventTime">Time</label>
+                <input type="text" id="eventTime" placeholder="e.g. 3:00 PM">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="eventLocation">Location</label>
+              <input type="text" id="eventLocation" placeholder="e.g. Community Hall">
+            </div>
+            <div class="form-group">
+              <label for="eventDescription">Description</label>
+              <textarea id="eventDescription" placeholder="What is this event about?"></textarea>
+            </div>
+            <div class="action-buttons">
+              <button type="submit" class="btn btn-success" id="eventSubmitBtn">ADD EVENT</button>
+              <button type="button" class="btn hidden" id="eventCancelBtn">CANCEL EDIT</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Event table -->
+        <div class="table-toolbar">
+          <label for="eventTableSearch" class="hidden">Search events</label>
+          <input type="text" id="eventTableSearch" class="table-search" placeholder="Search events..." autocomplete="off">
+          <span class="table-count" id="eventTableCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Location</th>
+                <th>Going</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="eventTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== ACTIVITY MANAGEMENT ===== -->
+      <section id="sectionActivities" class="hidden">
+        <h1 class="admin-page-title">Manage Activities</h1>
+        <p class="admin-page-sub">Keep the community activity list up to date.</p>
+
+        <!-- Add / Edit activity form -->
+        <div class="form-box mb-20">
+          <h3 id="activityFormTitle">Add Activity</h3>
+          <hr style="border:none;border-top:1px solid #d9dee3;margin:12px 0;">
+          <form id="activityForm" novalidate>
+            <div class="form-group">
+              <label for="activityName">Activity Name</label>
+              <input type="text" id="activityName" placeholder="e.g. Clean-Up Drive">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="activityDate">Date</label>
+                <input type="date" id="activityDate">
+              </div>
+              <div class="form-group">
+                <label for="activityLocation">Location</label>
+                <input type="text" id="activityLocation" placeholder="e.g. Community Plaza">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="activityDescription">Description</label>
+              <textarea id="activityDescription" placeholder="Describe the activity"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="activityImageFile">Upload Photos (recommended)</label>
+              <input type="file" id="activityImageFile" accept="image/*" class="file-upload" multiple>
+              <input type="hidden" id="activityImagesJson">
+              <img id="activityImagePreview" class="img-preview" alt="Image preview">
+              <div id="activityImageStrip" class="img-strip" aria-live="polite"></div>
+              <p id="activityImageCount" class="meta img-count"></p>
+              <p class="meta">Pick one or more photos from your device - each is resized automatically and saved in the browser. You can select up to 6.</p>
+            </div>
+            <div class="form-group">
+              <label for="activityImage">Or enter an image path</label>
+              <input type="text" id="activityImage" placeholder="images/activity-01.jpg">
+              <p class="meta">Use a local file, or several separated by commas: images/a.jpg, images/b.jpg</p>
+            </div>
+            <div class="form-group">
+              <label for="activityVideoFile">Add Videos (optional)</label>
+              <input type="file" id="activityVideoFile" accept="video/*" class="file-upload" multiple>
+              <video id="activityVideoPreview" class="video-preview" controls muted playsinline></video>
+              <p class="meta" id="activityVideoHint">Pick one or more short videos from your device (MP4, WEBM, or OGG) - they are saved in the browser.</p>
+            </div>
+            <div class="form-group">
+              <label for="activityVideo">Or enter a video path / link</label>
+              <input type="text" id="activityVideo" placeholder="videos/cleanup-drive.mp4 or https://.../video.mp4">
+              <p class="meta">Use a local file or a direct video link (MP4, WEBM, or OGG).</p>
+            </div>
+            <div class="action-buttons">
+              <button type="submit" class="btn btn-success" id="activitySubmitBtn">ADD ACTIVITY</button>
+              <button type="button" class="btn hidden" id="activityCancelBtn">CANCEL EDIT</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Activity table -->
+        <div class="table-toolbar">
+          <label for="activityTableSearch" class="hidden">Search activities</label>
+          <input type="text" id="activityTableSearch" class="table-search" placeholder="Search activities..." autocomplete="off">
+          <span class="table-count" id="activityTableCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Activity Name</th>
+                <th>Date</th>
+                <th>Location</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="activityTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== GALLERY MANAGEMENT ===== -->
+      <section id="sectionGallery" class="hidden">
+        <h1 class="admin-page-title">Manage Gallery</h1>
+        <p class="admin-page-sub">Manage the photos displayed on the public gallery page.</p>
+
+        <div class="alert alert-info show">
+          Use local image files only (for example: images/community-01.jpg).
+          Our group will replace the sample photos with original community
+          photographs before submission.
+        </div>
+
+        <!-- Add / Edit gallery image form -->
+        <div class="form-box mb-20">
+          <h3 id="galleryFormTitle">Add Photo</h3>
+          <hr style="border:none;border-top:1px solid #d9dee3;margin:12px 0;">
+          <form id="galleryForm" novalidate>
+            <div class="form-group">
+              <label for="galleryImageFile">Upload Image (recommended)</label>
+              <input type="file" id="galleryImageFile" accept="image/*" class="file-upload">
+              <img id="galleryImagePreview" class="img-preview" alt="Image preview">
+              <p class="meta">Pick a photo from your device - it is resized automatically and saved in the browser.</p>
+            </div>
+            <div class="form-group">
+              <label for="galleryImage">Or enter an image path</label>
+              <input type="text" id="galleryImage" placeholder="images/community-01.jpg">
+              <p class="meta">Local file path only. No online image URLs.</p>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="galleryCaption">Caption</label>
+                <input type="text" id="galleryCaption" placeholder="e.g. Community Plaza">
+              </div>
+              <div class="form-group">
+                <label for="galleryDate">Date</label>
+                <input type="date" id="galleryDate">
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button type="submit" class="btn btn-success" id="gallerySubmitBtn">ADD PHOTO</button>
+              <button type="button" class="btn hidden" id="galleryCancelBtn">CANCEL EDIT</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Gallery table -->
+        <div class="table-toolbar">
+          <label for="galleryTableSearch" class="hidden">Search photos</label>
+          <input type="text" id="galleryTableSearch" class="table-search" placeholder="Search photos..." autocomplete="off">
+          <span class="table-count" id="galleryTableCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Caption</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="galleryTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== MANAGE USERS (Barangay Officials + registered residents) ===== -->
+      <section id="sectionUsers" class="hidden">
+        <h1 class="admin-page-title">Manage Users</h1>
+        <p class="admin-page-sub">Create Barangay Official accounts and view every registered community account.</p>
+
+        <div class="table-toolbar">
+          <button type="button" class="btn btn-success" id="officialToggleBtn" aria-expanded="false" aria-controls="officialFormBox">ADD OFFICIAL</button>
+        </div>
+
+        <div class="form-box hidden" id="officialFormBox" style="max-width:680px;">
+          <h3 id="officialFormTitle">Add Barangay Official</h3>
+          <form id="officialForm" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="officialName">Full Name</label>
+                <input type="text" id="officialName" placeholder="e.g. Maria Santos" maxlength="60">
+              </div>
+              <div class="form-group">
+                <label for="officialBarangay">Barangay</label>
+                <input type="text" id="officialBarangay" placeholder="e.g. Barangay San Roque" maxlength="60">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="officialUsername">Username</label>
+                <input type="text" id="officialUsername" placeholder="e.g. official.santos" maxlength="30" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label for="officialPassword">Password</label>
+                <input type="password" id="officialPassword" placeholder="At least 6 characters" autocomplete="new-password">
+                <p class="meta">Leave blank to keep the current password.</p>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="officialEmail">Email (optional)</label>
+                <input type="email" id="officialEmail" placeholder="office@email.com">
+              </div>
+              <div class="form-group">
+                <label for="officialPhone">Phone (optional)</label>
+                <input type="text" id="officialPhone" placeholder="09XX-XXX-XXXX">
+              </div>
+            </div>
+
+            <div class="form-actions" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <button type="submit" class="btn btn-success" id="officialSubmitBtn">ADD OFFICIAL</button>
+              <button type="button" class="btn hidden" id="officialCancelBtn">CANCEL</button>
+              <button type="button" class="btn" id="officialBackBtn" style="margin-left:auto;">BACK</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-toolbar">
+          <label for="officialsTableSearch" class="hidden">Search officials</label>
+          <input type="text" id="officialsTableSearch" class="table-search" placeholder="Search officials..." autocomplete="off">
+          <span class="table-count" id="officialsTableCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Barangay</th>
+                <th>Username</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="officialsTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <h2 class="admin-page-title sub-heading">Registered Users</h2>
+        <p class="admin-page-sub">Residents who signed up from the public site.</p>
+
+        <div class="table-toolbar">
+          <label for="usersTableSearch" class="hidden">Search users</label>
+          <input type="text" id="usersTableSearch" class="table-search" placeholder="Search users..." autocomplete="off">
+          <span class="table-count" id="usersTableCount" aria-live="polite"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== COMMENTS ===== -->
+      <section id="sectionComments" class="hidden">
+        <h1 class="admin-page-title">Manage Comments</h1>
+        <p class="admin-page-sub">See who commented on each post.</p>
+
+        <div class="table-toolbar">
+          <label for="commentsTableSearch" class="hidden">Search posts or people</label>
+          <input type="text" id="commentsTableSearch" class="table-search" placeholder="Search posts or people..." autocomplete="off">
+          <span class="table-count" id="commentsTableCount" aria-live="polite"></span>
+        </div>
+
+        <div id="adminCommentThreads">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== COMMUNITY POSTS (user posts + lost & found moderation) ===== -->
+      <section id="sectionPosts" class="hidden">
+        <h1 class="admin-page-title">Community Posts</h1>
+        <p class="admin-page-sub">Review, hide, or delete posts shared by residents - especially Lost &amp; Found reports.</p>
+
+        <div class="table-toolbar">
+          <label for="postsSearch" class="hidden">Search community posts</label>
+          <input type="text" id="postsSearch" class="table-search" placeholder="Search posts..." autocomplete="off">
+          <select id="postsKindFilter" class="filter-select" aria-label="Filter by type">
+            <option value="all">All Types</option>
+          </select>
+          <span class="table-count" id="postsTableCount" aria-live="polite"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Post</th>
+                <th>Author</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="postsTableBody">
+              <!-- Filled by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <h2 class="admin-page-title sub-heading">Community Alerts</h2>
+        <p class="admin-page-sub">Lost &amp; found alerts currently shown to the community.</p>
+        <div id="communityAlertsAdmin">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== ADMIN PROFILE (photo + personal information) ===== -->
+      <section id="sectionProfile" class="hidden profile-page">
+        <h1 class="admin-page-title">My Profile</h1>
+        <p class="admin-page-sub">Your profile picture and details appear beside every post you publish.</p>
+
+        <div class="form-box has-close profile-card">
+          <button type="button" class="circle-close-btn" id="adminProfileCloseBtn" aria-label="Close profile" title="Back to dashboard">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div class="alert alert-success" id="adminProfileSuccess">
+            Your profile has been saved successfully.
+          </div>
+
+          <form id="adminProfileForm" novalidate>
+            <div class="form-group">
+              <label>Profile Picture</label>
+              <div class="avatar-editor">
+                <span class="avatar-preview" id="adminAvatarPreview">A</span>
+                <div class="avatar-editor-actions">
+                  <input type="file" id="adminAvatarFile" accept="image/*" class="file-upload">
+                  <button type="button" class="btn btn-small btn-danger" id="adminAvatarRemove">REMOVE PHOTO</button>
+                  <p class="meta">Choose a photo from your device - it is cropped to a square and saved in your browser.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adminProfileName">Display Name</label>
+                <input type="text" id="adminProfileName" placeholder="Name shown as the author of posts" maxlength="40">
+              </div>
+              <div class="form-group">
+                <label for="adminProfileTitle">Title / Position</label>
+                <input type="text" id="adminProfileTitle" placeholder="e.g. Barangay Administrator" maxlength="60">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adminProfilePhone">Phone</label>
+                <input type="text" id="adminProfilePhone" placeholder="09XX-XXX-XXXX">
+              </div>
+              <div class="form-group">
+                <label for="adminProfileEmail">Email</label>
+                <input type="email" id="adminProfileEmail" placeholder="office@email.com">
+              </div>
+            </div>
+
+            <div class="profile-actions">
+              <button type="submit" class="btn btn-success">SAVE PROFILE</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ===== NOTIFICATIONS (history + settings) ===== -->
+      <section id="sectionNotifications" class="hidden">
+        <h1 class="admin-page-title">Notifications</h1>
+        <p class="admin-page-sub">Every like, comment, share, save, and RSVP from your residents.</p>
+
+        <div class="notif-history-toolbar">
+          <div class="filter-buttons" id="notifFilters">
+            <button class="filter-btn active" data-filter="all" type="button">All</button>
+            <button class="filter-btn" data-filter="unread" type="button">Unread</button>
+          </div>
+          <span class="table-count" id="notifHistoryCount" aria-live="polite"></span>
+          <button class="btn btn-small" id="notifMarkAllBtn" type="button">MARK ALL AS READ</button>
+          <button class="btn btn-small btn-danger" id="notifClearBtn" type="button">CLEAR HISTORY</button>
+        </div>
+
+        <div class="notif-history-list" id="notifHistoryList">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+
+      <!-- ===== AUDIT TRAIL ===== -->
+      <section id="sectionAuditLog" class="hidden">
+        <h1 class="admin-page-title">Audit Trail</h1>
+        <p class="admin-page-sub">Recent admin actions and system activity across the portal.</p>
+        <div class="form-box">
+          <div id="auditLogList" class="audit-log-list">
+            <!-- Filled by JavaScript -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===== GO LIVE STUDIO (camera preview, broadcast controls, archives) ===== -->
+  <div class="modal-overlay" id="liveStudio" aria-hidden="true">
+    <div class="modal live-studio" role="dialog" aria-modal="true" aria-labelledby="liveStudioTitle">
+      <div class="modal-header">
+        <h3 id="liveStudioTitle">Go Live Studio</h3>
+        <button type="button" class="modal-close" id="liveCloseBtn" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="live-studio-grid">
+        <div class="live-preview-col">
+          <video id="livePreview" class="live-preview" autoplay muted playsinline></video>
+          <p class="live-preview-ph" id="livePreviewPh">Enable the camera and microphone to preview yourself before going live.</p>
+          <p class="live-error hidden" id="liveError" role="alert"></p>
+          <button type="button" class="btn" id="liveEnableBtn">Enable Camera &amp; Microphone</button>
+        </div>
+
+        <div class="live-controls-col">
+          <div class="form-group">
+            <label for="liveTitle">Live Stream Title</label>
+            <input type="text" id="liveTitle" placeholder="e.g. Town Hall Q&amp;A with the Captain">
+          </div>
+          <div class="form-group">
+            <label for="liveDescription">Description</label>
+            <textarea id="liveDescription" placeholder="What is this broadcast about?"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="liveCategory">Category</label>
+            <select id="liveCategory">
+              <option value="Community">Community</option>
+              <option value="News">News</option>
+              <option value="Events">Events</option>
+              <option value="Emergency">Emergency</option>
+            </select>
+          </div>
+          <label class="live-check">
+            <input type="checkbox" id="liveKeepRec" checked>
+            <span id="liveKeepRecLabel">Save a recording to Live Archives when I end the broadcast</span>
+          </label>
+
+          <div class="live-status-row">
+            <span class="live-badge hidden" id="liveStudioBadge">LIVE</span>
+            <span class="live-status-text" id="liveStudioStatus">Offline</span>
+            <span class="live-stat" id="liveStudioViewers">0 viewers</span>
+            <span class="live-stat" id="liveStudioDuration">00:00</span>
+          </div>
+
+          <div class="action-buttons">
+            <button type="button" class="btn btn-danger" id="liveStartBtn">Start Broadcast</button>
+            <button type="button" class="btn hidden" id="liveStopBtn">End Broadcast</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="live-archives">
+        <h3 id="liveArchiveHead">Live Archives</h3>
+        <p class="meta" id="liveArchiveNote">Saved broadcasts play back like any other video post.</p>
+        <div id="liveArchiveList">
+          <p class="meta">No saved broadcasts yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EMERGENCY BROADCAST STUDIO ===== -->
+  <div class="modal-overlay" id="emergencyStudio" aria-hidden="true">
+    <div class="modal emergency-studio" role="dialog" aria-modal="true" aria-labelledby="emergencyStudioTitle">
+      <div class="modal-header">
+        <h3 id="emergencyStudioTitle">Emergency Broadcast</h3>
+        <button type="button" class="modal-close" id="emergencyStudioClose" aria-label="Close">&times;</button>
+      </div>
+
+      <form id="emergencyForm" novalidate>
+        <div class="form-group">
+          <label for="emergencyTitle">Emergency Title</label>
+          <input type="text" id="emergencyTitle" placeholder="e.g. Flood Warning" maxlength="80">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="emergencyType">Type</label>
+            <select id="emergencyType"></select>
+          </div>
+          <div class="form-group">
+            <label for="emergencyBarangay">Affected Barangay</label>
+            <select id="emergencyBarangay">
+              <option value="all">All Barangays</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="emergencyLocation">Location</label>
+          <input type="text" id="emergencyLocation" placeholder="e.g. Riverside, Purok 3" maxlength="120">
+        </div>
+
+        <div class="form-group">
+          <label for="emergencyDescription">Complete Description</label>
+          <textarea id="emergencyDescription" rows="2" placeholder="What is happening? This text is read aloud by the AI voice." maxlength="600"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="emergencyInstructions">Safety Instructions (one per line)</label>
+          <textarea id="emergencyInstructions" rows="2" placeholder="Avoid flooded areas.&#10;Go to the nearest evacuation center."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="emergencyExpiry">Expires in</label>
+          <select id="emergencyExpiry"></select>
+        </div>
+
+        <div class="action-buttons">
+          <button type="submit" class="btn btn-danger">PUBLISH EMERGENCY ALERT</button>
+        </div>
+      </form>
+
+      <div class="emergency-active">
+        <h3 class="mb-20">Active Broadcasts</h3>
+        <div id="emergencyActiveList"><p class="meta">No active emergency broadcasts.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN SYSTEM SETTINGS ===== -->
+  <div class="modal-overlay settings-overlay" id="adminSettingsModal" aria-hidden="true">
+    <div class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="adminSettingsTitle">
+      <div class="modal-header settings-modal-head">
+        <h3 id="adminSettingsTitle"><span class="settings-ti" aria-hidden="true">&#9881;</span> Admin System Settings</h3>
+        <button type="button" class="modal-close" id="adminSettingsClose" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="settings-tabs" id="adminSettingsTabs" role="tablist">
+        <button type="button" class="settings-tab active" data-settings-tab="general" role="tab" aria-selected="true">General</button>
+        <button type="button" class="settings-tab" data-settings-tab="notifications" role="tab" aria-selected="false">Notifications</button>
+        <button type="button" class="settings-tab" data-settings-tab="security" role="tab" aria-selected="false">Security</button>
+        <button type="button" class="settings-tab" data-settings-tab="backup" role="tab" aria-selected="false">Data &amp; Backup</button>
+        <button type="button" class="settings-tab" data-settings-tab="users" role="tab" aria-selected="false">Users</button>
+      </div>
+
+      <div class="settings-body" id="adminSettingsBody">
+
+        <!-- ===== GENERAL ===== -->
+        <section class="settings-pane" data-settings-pane="general">
+          <div class="settings-group">
+            <p class="settings-group-title">APPEARANCE</p>
+            <div class="settings-field settings-field-wide">
+              <span>Theme</span>
+              <div class="settings-segmented" id="setTheme">
+                <button type="button" data-value="light">Light</button>
+                <button type="button" data-value="dark">Dark</button>
+                <button type="button" data-value="system">System</button>
+              </div>
+            </div>
+            <div class="settings-grid">
+              <label class="settings-field">
+                <span>Language</span>
+                <select id="setLang">
+                  <option value="en">English (US)</option>
+                  <option value="fil">Filipino</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <p class="settings-group-title">BRANDING</p>
+            <div class="settings-grid">
+              <label class="settings-field">
+                <span>Site Title</span>
+                <input type="text" id="setSiteTitle" placeholder="Community Connect - Admin">
+              </label>
+              <label class="settings-field">
+                <span>Site Name (Public)</span>
+                <input type="text" id="setSiteName" placeholder="Community Connect">
+              </label>
+              <div class="settings-field settings-field-wide">
+                <span>Logo</span>
+                <div class="settings-logo-row">
+                  <span class="settings-logo-preview" id="setLogoPreview">CC</span>
+                  <input type="file" id="setLogoFile" accept="image/*" class="file-upload">
+                  <button type="button" class="btn btn-small" id="setLogoRemove">REMOVE</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <p class="settings-group-title">SITE AVAILABILITY</p>
+            <div class="settings-grid">
+              <label class="settings-field settings-field-switch">
+                <span>Maintenance Mode <small class="settings-help">Show a maintenance notice on the public site.</small></span>
+                <input type="checkbox" class="switch" id="setMaintenance">
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== NOTIFICATIONS ===== -->
+        <section class="settings-pane hidden" data-settings-pane="notifications">
+          <div class="settings-group">
+            <p class="settings-group-title">BELL ALERTS</p>
+            <p class="settings-help">Choose which activity appears in the admin notification bell. Turning a type off keeps its history but hides it from the bell and its count.</p>
+            <div class="settings-notif-list" id="setNotifList"></div>
+          </div>
+        </section>
+
+        <!-- ===== SECURITY ===== -->
+        <section class="settings-pane hidden" data-settings-pane="security">
+          <div class="settings-group">
+            <p class="settings-group-title">ADMIN ACCOUNT</p>
+            <div class="settings-grid">
+              <div class="settings-field">
+                <span>Password</span>
+                <button type="button" class="btn btn-small" id="setChangePassword">Change Password...</button>
+              </div>
+              <label class="settings-field">
+                <span>Auto-Logout After Inactivity</span>
+                <select id="setSessionTimeout">
+                  <option value="0">Never</option>
+                  <option value="15">15 minutes</option>
+                  <option value="30">30 minutes</option>
+                  <option value="60">1 hour</option>
+                </select>
+              </label>
+            </div>
+            <p class="settings-help">Your new password is used the next time you sign in at the admin login page. Auto-logout signs you out after the chosen period with no activity.</p>
+          </div>
+        </section>
+
+        <!-- ===== BACKUP & DATA ===== -->
+        <section class="settings-pane hidden" data-settings-pane="backup">
+          <div class="settings-group">
+            <p class="settings-group-title">BACKUP PREFERENCES</p>
+            <div class="settings-grid">
+              <label class="settings-field settings-field-switch"><span>Remind me to back up</span><input type="checkbox" class="switch" id="setAutoBackup" checked></label>
+              <label class="settings-field">
+                <span>Reminder Frequency</span>
+                <select id="setBackupFreq"><option>Daily</option><option>Weekly</option><option>Monthly</option></select>
+              </label>
+              <label class="settings-field">
+                <span>Log Retention</span>
+                <select id="setRetention"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="60">60 days</option><option value="0">Keep forever</option></select>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <p class="settings-group-title">BACKUP &amp; RESTORE</p>
+            <div class="action-buttons settings-data-tools">
+              <button class="btn" id="exportDataBtn" type="button">EXPORT JSON</button>
+              <button class="btn" id="importDataBtn" type="button">IMPORT JSON</button>
+              <button class="btn" id="exportNewsCsvBtn" type="button">EXPORT NEWS CSV</button>
+              <button class="btn" id="restoreBackupBtn" type="button">RESTORE LAST RESET</button>
+              <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+            </div>
+            <p class="settings-help">Everything lives in this browser's LocalStorage. Export a JSON backup before clearing browser data, or import one from another computer.</p>
+          </div>
+
+          <div class="settings-group settings-danger-zone">
+            <p class="settings-group-title">DANGER ZONE</p>
+            <p class="settings-help">Reset removes all content and restores the original sample data. A safety backup is saved automatically, so you can undo it with RESTORE LAST RESET.</p>
+            <button class="btn btn-danger" id="resetDataBtn" type="button">RESET DEMO DATA</button>
+          </div>
+        </section>
+
+        <!-- ===== USERS ===== -->
+        <section class="settings-pane hidden" data-settings-pane="users">
+          <div class="settings-group">
+            <p class="settings-group-title">ACCOUNTS OVERVIEW</p>
+            <div class="settings-stats">
+              <div class="settings-stat"><span class="settings-stat-num" id="setStatResidents">0</span><span>Residents</span></div>
+              <div class="settings-stat"><span class="settings-stat-num" id="setStatOfficials">0</span><span>Barangay Officials</span></div>
+              <div class="settings-stat"><span class="settings-stat-num" id="setStatActive">0</span><span>Active Officials</span></div>
+            </div>
+            <div class="action-buttons">
+              <button type="button" class="btn" id="setOpenUserDir">OPEN MANAGE USERS</button>
+              <button type="button" class="btn" id="setOpenNotifications">OPEN NOTIFICATIONS</button>
+            </div>
+            <p class="settings-help">Create, edit, activate, or delete accounts in the <b>Manage Users</b> section. This panel only summarises the directory so it never duplicates the table.</p>
+          </div>
+        </section>
+      </div>
+
+      <div class="settings-footer">
+        <button type="button" class="btn btn-small" id="adminSettingsDefaults">RESET TO DEFAULTS</button>
+        <span class="settings-saved hidden" id="adminSettingsSavedMsg">Settings saved.</span>
+        <div class="settings-footer-actions">
+          <button type="button" class="btn" id="adminSettingsCancel">CANCEL</button>
+          <button type="button" class="btn btn-success" id="adminSettingsSave">SAVE CHANGES</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
