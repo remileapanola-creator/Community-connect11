@@ -1,0 +1,3270 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Community Connect E2E Tests</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f8; color: #1a1a1a; }
+    h1 { font-size: 20px; }
+    .note { background: #fff3cd; border: 1px solid #ffe08a; padding: 10px; border-radius: 4px; font-size: 13px; }
+    #summary { font-size: 17px; font-weight: bold; margin: 14px 0; padding: 10px 14px; background: #fff; border-radius: 6px; display: inline-block; }
+    #summary.done { background: #dff0d8; color: #2b6a2b; }
+    #summary.fail { background: #f8d7da; color: #8a1f24; }
+    #results { list-style: none; padding: 0; max-width: 900px; }
+    #results li { font-size: 13px; padding: 4px 8px; margin-bottom: 2px; border-radius: 3px; background: #fff; }
+    #results li.pass::before { content: "PASS  "; color: #1e7e34; font-weight: bold; }
+    #results li.fail::before { content: "FAIL  "; color: #b02a37; font-weight: bold; }
+    #stage iframe { margin: 6px 6px 0 0; border: 1px solid #ccc; width: 330px; height: 240px; background: #fff; vertical-align: top; }
+    #stage { max-width: 1000px; }
+  </style>
+</head>
+<body>
+  <h1>Community Connect â€” End-to-End Test Suite</h1>
+  <p class="note">
+    Warning: this suite clears Community Connect data (news, accounts, settings) for this
+    browser origin before running, then seeds its own test content. Run it from a clean
+    profile or a local server, not against real data.
+  </p>
+  <div id="summary">RUNNING...</div>
+  <ul id="results"></ul>
+  <div id="stage"></div>
+
+  <script>
+  (function () {
+    "use strict";
+    var BASE = "../";
+    var results = [];
+    var finished = false;
+    var summaryEl = document.getElementById("summary");
+    var listEl = document.getElementById("results");
+    var stage = document.getElementById("stage");
+
+    function record(name, ok, detail) {
+      results.push({ name: name, ok: !!ok });
+      var li = document.createElement("li");
+      li.className = ok ? "pass" : "fail";
+      li.textContent = name + (detail ? " [" + detail + "]" : "");
+      listEl.appendChild(li);
+    }
+    function assert(cond, name, detail) { record(name, !!cond, detail); return !!cond; }
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    function finish() {
+      if (finished) return;
+      finished = true;
+      var pass = results.filter(function (r) { return r.ok; }).length;
+      var total = results.length;
+      var failed = total - pass;
+      summaryEl.textContent = "E2E DONE: " + pass + "/" + total + (failed ? " (" + failed + " FAILED)" : "");
+      summaryEl.className = failed ? "fail" : "done";
+      document.title = "E2E DONE: " + pass + "/" + total;
+    }
+    setTimeout(finish, 150000); // watchdog for real-browser runs
+
+    function loadPage(src) {
+      return new Promise(function (resolve) {
+        var f = document.createElement("iframe");
+        var done = false;
+        var timer = setTimeout(function () {
+          if (done) return;
+          done = true;
+          record("load " + src, false, "timeout");
+          try { f.remove(); } catch (e) {}
+          resolve(null);
+        }, 12000);
+
+        function docReady() {
+          try {
+            var d = f.contentDocument;
+            if (!d || d.readyState !== "complete") return false;
+            return d.location.href.indexOf(src.split("#")[0]) >= 0;
+          } catch (e) { return false; }
+        }
+        function settle() {
+          if (done) return;
+          if (docReady()) {
+            done = true;
+            clearTimeout(timer);
+            setTimeout(function () { resolve(f); }, 500);
+          } else {
+            setTimeout(settle, 100);
+          }
+        }
+        f.onload = settle;
+        f.src = BASE + src;
+        stage.appendChild(f);
+        setTimeout(settle, 600); // covers load events missed before handler attach
+      });
+    }
+
+    function closeFrame(f) { if (f) { try { f.remove(); } catch (e) {} } }
+
+    function pageText(f) { return f.contentDocument.documentElement.textContent || ""; }
+    function $(f, sel) { return f.contentDocument.querySelector(sel); }
+    function $$(f, sel) { return Array.prototype.slice.call(f.contentDocument.querySelectorAll(sel)); }
+    function gi(f, id) { return f.contentDocument.getElementById(id); }
+
+    function setInput(el, value) {
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    function fireSubmit(f, id) {
+      var form = gi(f, id);
+      if (!form) return false;
+      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      return true;
+    }
+    function esc(f) {
+      f.contentDocument.dispatchEvent(new f.contentWindow.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    }
+
+    var toastHas = async function (frame, needle) {
+      for (var i = 0; i < 14; i++) {
+        if ($$(frame, ".toast").filter(function (t) {
+          return t.textContent.indexOf(needle) >= 0;
+        }).length) return true;
+        await sleep(150);
+      }
+      return false;
+    };
+    var clearToasts = function (frame) {
+      var host = frame.contentDocument.querySelector(".toast-host");
+      if (host) host.innerHTML = "";
+    };
+    var toastTexts = function (frame) {
+      return $$(frame, ".toast").map(function (t) { return t.textContent; }).join(" | ");
+    };
+
+    function getNews() {
+      try { return JSON.parse(localStorage.getItem("communityNews") || "[]"); } catch (e) { return []; }
+    }
+    function getActivities() {
+      try { return JSON.parse(localStorage.getItem("communityActivities") || "[]"); } catch (e) { return []; }
+    }
+    function getAnnouncements() {
+      try { return JSON.parse(localStorage.getItem("communityAnnouncements") || "[]"); } catch (e) { return []; }
+    }
+    function getUsers() {
+      try { return JSON.parse(localStorage.getItem("communityUsers") || "[]"); } catch (e) { return []; }
+    }
+    function getViewLog() {
+      try { return JSON.parse(localStorage.getItem("communityViewLog") || "null"); } catch (e) { return null; }
+    }
+    function getBookmarks() {
+      try { return JSON.parse(localStorage.getItem("communityBookmarks") || "[]"); } catch (e) { return []; }
+    }
+    function getEvents() {
+      try { return JSON.parse(localStorage.getItem("communityEvents") || "[]"); } catch (e) { return []; }
+    }
+    function getOfficials() {
+      try { return JSON.parse(localStorage.getItem("barangayOfficials") || "[]"); } catch (e) { return []; }
+    }
+    function getCertRequests() {
+      try { return JSON.parse(localStorage.getItem("certificateRequests") || "[]"); } catch (e) { return []; }
+    }
+    function getOfficialNotifs() {
+      try { return JSON.parse(localStorage.getItem("communityOfficialNotifications") || "[]"); } catch (e) { return []; }
+    }
+
+    async function run() {
+      // ---------- 0. bootstrap ----------
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+      keys.forEach(function (k) {
+        if (/^(community|userLoggedIn|currentUsername|adminLoggedIn|cc)/.test(k)) {
+          try { localStorage.removeItem(k); } catch (e) {}
+        }
+      });
+      sessionStorage.removeItem("ccEmergencyDismissed");
+      record("bootstrap: storage cleared", true);
+
+      // ---------- 1. home page ----------
+      var f = await loadPage("index.html");
+      if (!assert(!!f, "home page loads")) { finish(); return; }
+      assert(!!$(f, ".skip-link"), "home: skip link present");
+      assert(gi(f, "mainContent") && gi(f, "mainContent").getAttribute("tabindex") === "-1", "home: mainContent focus target");
+      var navToggle = gi(f, "navToggle");
+      assert(!!navToggle && navToggle.getAttribute("aria-controls") === "mainNav", "home: navToggle aria-controls");
+      if (navToggle) {
+        navToggle.click();
+        assert(gi(f, "mainNav").classList.contains("open") && navToggle.getAttribute("aria-expanded") === "true",
+          "home: nav opens + aria-expanded");
+        navToggle.click();
+        assert(navToggle.getAttribute("aria-expanded") === "false", "home: nav closes + aria-expanded");
+      }
+      var homeNews = f.contentDocument.querySelectorAll("#homeLatestNews .card, #homeLatestNews article");
+      assert(homeNews.length > 0, "home: latest news rendered", homeNews.length + " cards");
+      var ld = $$(f, 'script[type="application/ld+json"]');
+      assert(ld.length >= 1, "home: JSON-LD present", ld.length + " blocks");
+      var jsonOk = ld.length > 0;
+      try { JSON.parse(ld[0].textContent); } catch (e) { jsonOk = false; }
+      assert(jsonOk, "home: JSON-LD parses");
+      assert(!!$(f, 'meta[name="description"]'), "home: meta description");
+      assert(!!$(f, 'meta[property="og:title"]'), "home: Open Graph tags");
+      var banner = gi(f, "emergencyBanner");
+      if (banner) {
+        var dismiss = gi(f, "emergencyDismiss");
+        if (dismiss) {
+          dismiss.click();
+          assert(!gi(f, "emergencyBanner"), "home: emergency banner dismisses");
+        } else record("home: emergency banner dismiss button", false);
+      } else {
+        record("home: emergency banner (no active emergency, skipped)", true);
+      }
+      assert(typeof f.contentWindow.showToast === "function", "home: showToast available");
+      f.contentWindow.showToast("E2E toast check", "success");
+      await sleep(150);
+      var toast = $(f, ".toast");
+      assert(!!toast && toast.classList.contains("show") && toast.textContent.indexOf("E2E toast check") >= 0,
+        "home: toast appears");
+      closeFrame(f);
+
+      // ---------- 2. admin login (wrong then right) ----------
+      f = await loadPage("admin-login.html");
+      if (assert(!!f, "admin login page loads")) {
+        setInput(gi(f, "adminUsername"), "admin");
+        setInput(gi(f, "adminPassword"), "wrongpass");
+        fireSubmit(f, "adminLoginForm");
+        await sleep(300);
+        assert(pageText(f).indexOf("Invalid username or password.") >= 0, "admin login: error message shown");
+        assert(localStorage.getItem("adminLoggedIn") !== "true", "admin login: rejected on bad password");
+
+        setInput(gi(f, "adminUsername"), "admin");
+        setInput(gi(f, "adminPassword"), "admin123");
+        fireSubmit(f, "adminLoginForm");
+        var okLogin = false;
+        for (var t = 0; t < 25; t++) {
+          await sleep(150);
+          if (localStorage.getItem("adminLoggedIn") === "true") { okLogin = true; break; }
+        }
+        assert(okLogin, "admin login: admin/admin123 accepted");
+      }
+      closeFrame(f);
+
+      // ---------- 3. admin: create + pin news ----------
+      f = await loadPage("admin.html");
+      if (assert(!!f, "admin dashboard loads")) {
+        assert(!!$(f, ".skip-link"), "admin: skip link present");
+        assert($$(f, ".admin-sidebar a[aria-current='page']").length >= 1, "admin: sidebar aria-current");
+        assert(!!gi(f, "exportNewsCsvBtn"), "admin: CSV export button exists");
+        assert(typeof f.contentWindow.exportNewsCsv === "function", "admin: exportNewsCsv function exists");
+        assert(!!gi(f, "chartViews"), "admin: views chart card exists");
+        var chartBars = $$(f, "#chartViews .bar-row");
+        assert(chartBars.length > 0, "admin: views chart rendered", chartBars.length + " bars");
+
+        // Settings now lives in the account menu (the header gear is removed)
+        assert(!gi(f, "dashSettingsBtn"), "admin: the separate header Settings gear is removed");
+        gi(f, "adminAccountBtn").click();
+        await sleep(120);
+        gi(f, "adminAccountSettings").click();
+        await sleep(150);
+        assert(gi(f, "adminSettingsModal").classList.contains("open"),
+          "admin: the account menu Settings opens the settings modal");
+        assert($$(f, "#adminSettingsTabs .settings-tab").length >= 4,
+          "admin: settings modal is organised into tabs");
+        assert($$(f, "#setTheme button").length === 3, "admin: settings has a Light/Dark/System theme picker");
+        assert($$(f, "#setTheme button.active").length === 1, "admin: the current theme is marked");
+        var notifTab = $$(f, "#adminSettingsTabs .settings-tab").filter(function (t) {
+          return t.getAttribute("data-settings-tab") === "notifications";
+        })[0];
+        if (assert(!!notifTab, "admin: settings has a Notifications tab")) {
+          notifTab.click();
+          await sleep(120);
+          assert($$(f, "#setNotifList .settings-notif").length >= 3,
+            "admin: bell-alert toggles render from the real notification types");
+        }
+        var usersTab = $$(f, "#adminSettingsTabs .settings-tab").filter(function (t) {
+          return t.getAttribute("data-settings-tab") === "users";
+        })[0];
+        if (assert(!!usersTab, "admin: settings has a Users tab")) {
+          usersTab.click();
+          await sleep(120);
+          assert(!!gi(f, "setOpenUserDir"), "admin: Users tab links to the directory");
+        }
+        var backupTab = $$(f, "#adminSettingsTabs .settings-tab").filter(function (t) {
+          return t.getAttribute("data-settings-tab") === "backup";
+        })[0];
+        if (assert(!!backupTab, "admin: settings has a Data & Backup tab")) {
+          backupTab.click();
+          await sleep(120);
+          assert(!!gi(f, "exportDataBtn") &&
+            !gi(f, "exportDataBtn").closest(".settings-pane").classList.contains("hidden"),
+            "admin: backup tools now live inside Settings");
+        }
+        assert($$(f, ".admin-sidebar a[data-section='backup']").length === 0,
+          "admin: no duplicate backup sidebar entry");
+        gi(f, "adminSettingsSave").click();
+        await sleep(1200);
+        assert(!!localStorage.getItem("communityAdminSettings"),
+          "admin: saving settings persists them");
+        assert(!gi(f, "adminSettingsModal").classList.contains("open"),
+          "admin: the settings modal closes after saving");
+
+        // Header account menu
+        gi(f, "adminAccountBtn").click();
+        await sleep(120);
+        assert(!!gi(f, "adminAccountProfile") && !!gi(f, "adminAccountSettings") && !!gi(f, "adminAccountLogout"),
+          "account: admin menu lists My Profile, Settings, Sign Out");
+        assert(gi(f, "adminMenuEmail").textContent.indexOf("@") >= 0, "account: admin menu shows the email");
+        gi(f, "adminAccountSettings").click();
+        await sleep(150);
+        assert(gi(f, "adminSettingsModal").classList.contains("open"),
+          "account: admin Settings opens the settings modal");
+        gi(f, "adminSettingsCancel").click();
+        await sleep(100);
+
+        var adminBack = $(f, "#adminSidebar a.sidebar-back");
+        assert(adminBack && adminBack.getAttribute("href") === "index.html",
+          "admin: sidebar has a Back to Website link to index.html");
+
+        setInput(gi(f, "newsTitle"), "E2E Test Article XYZ");
+        setInput(gi(f, "newsCategory"), "Health");
+        setInput(gi(f, "newsDate"), "2026-10-09");
+        setInput(gi(f, "newsDescription"), "Special e2e article used by the automated test suite.");
+        setInput(gi(f, "newsImage"), "images/news-01.jpg");
+        var submitBtn = gi(f, "newsSubmitBtn");
+        assert(!!submitBtn, "admin: news form submit button");
+        if (submitBtn) submitBtn.click();
+        await sleep(400);
+        var created = getNews().filter(function (n) { return n.title === "E2E Test Article XYZ"; });
+        assert(created.length === 1, "admin: news created", created.length + " found");
+        var newsId = created.length ? created[0].id : null;
+        var rowText = gi(f, "newsTableBody") ? gi(f, "newsTableBody").textContent : "";
+        assert(rowText.indexOf("E2E Test Article XYZ") >= 0, "admin: news appears in table");
+
+        if (newsId) {
+          f.contentWindow.togglePinNews(newsId);
+          await sleep(250);
+          var pinned = getNews().filter(function (n) { return n.id === newsId && n.pinned; });
+          assert(pinned.length === 1, "admin: pin/feature toggles");
+          rowText = gi(f, "newsTableBody").textContent;
+          assert(rowText.indexOf("FEATURED") >= 0, "admin: FEATURED badge in table row");
+        }
+
+        var annLink = $$(f, ".admin-sidebar a[data-section]").filter(function (a) {
+          return a.getAttribute("data-section") === "announcements";
+        })[0];
+        if (annLink) {
+          annLink.click();
+          await sleep(150);
+          assert(annLink.classList.contains("active") && annLink.getAttribute("aria-current") === "page",
+            "admin: section switch updates aria-current");
+          var newsLink = $$(f, ".admin-sidebar a[data-section]").filter(function (a) {
+            return a.getAttribute("data-section") === "news";
+          })[0];
+          if (newsLink) newsLink.click();
+        }
+
+        // ---------- admin table toolbar search + counts ----------
+        assert(!!gi(f, "newsTableSearch") && !!gi(f, "annTableSearch") && !!gi(f, "eventTableSearch") &&
+          !!gi(f, "activityTableSearch") && !!gi(f, "galleryTableSearch"),
+          "admin: table search inputs exist for news/ann/events/activities/gallery");
+        var cnt = gi(f, "newsTableCount");
+        assert(!!cnt && cnt.textContent.indexOf("items") >= 0, "admin: news table count shows item total",
+          cnt ? cnt.textContent.trim() : "missing");
+
+        setInput(gi(f, "newsTableSearch"), "e2e");
+        rowText = gi(f, "newsTableBody").textContent;
+        assert(rowText.indexOf("E2E Test Article XYZ") >= 0 && rowText.indexOf("No matching results") < 0,
+          "admin: table search keeps matching rows");
+
+        setInput(gi(f, "newsTableSearch"), "zzzqqq");
+        rowText = gi(f, "newsTableBody").textContent;
+        assert(rowText.indexOf("No matching results.") >= 0, "admin: table search shows no-results row");
+
+        setInput(gi(f, "newsTableSearch"), "");
+        rowText = gi(f, "newsTableBody").textContent;
+        assert(rowText.indexOf("E2E Test Article XYZ") >= 0, "admin: clearing table search restores rows");
+
+        setInput(gi(f, "galleryTableSearch"), "zzzqqq");
+        rowText = gi(f, "galleryTableBody").textContent;
+        assert(rowText.indexOf("No matching results.") >= 0, "admin: gallery table search shows no-results row");
+        setInput(gi(f, "galleryTableSearch"), "");
+      }
+      closeFrame(f);
+      var e2eNewsId = (getNews().filter(function (n) { return n.title === "E2E Test Article XYZ"; })[0] || {}).id || null;
+
+      // ---------- 4. register + user login ----------
+      f = await loadPage("register.html");
+      if (assert(!!f, "register page loads")) {
+        setInput(gi(f, "regUsername"), "e2etest");
+        setInput(gi(f, "regPassword"), "test123");
+        setInput(gi(f, "regConfirm"), "test123");
+        fireSubmit(f, "registerForm");
+        await sleep(500);
+        assert(getUsers().some(function (u) { return u.username === "e2etest"; }), "register: user stored");
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-login.html");
+      if (assert(!!f, "user login page loads")) {
+        assert(!$(f, ".login-back"), "login: the Back to Website link was moved to the dashboards");
+        setInput(gi(f, "userUsername"), "e2etest");
+        setInput(gi(f, "userPassword"), "nope99");
+        fireSubmit(f, "userLoginForm");
+        await sleep(300);
+        assert(pageText(f).indexOf("Invalid username or password.") >= 0, "user login: error message shown");
+        assert(localStorage.getItem("userLoggedIn") !== "true", "user login: rejected on bad password");
+
+        setInput(gi(f, "userUsername"), "e2etest");
+        setInput(gi(f, "userPassword"), "test123");
+        fireSubmit(f, "userLoginForm");
+        var userOk = false;
+        for (var t2 = 0; t2 < 25; t2++) {
+          await sleep(150);
+          if (localStorage.getItem("userLoggedIn") === "true") { userOk = true; break; }
+        }
+        assert(userOk, "user login: correct password accepted");
+      }
+      closeFrame(f);
+
+      // ---------- 5. user dashboard ----------
+      f = await loadPage("user-dashboard.html");
+      if (assert(!!f, "user dashboard loads")) {
+        assert(!!gi(f, "dashSavedList"), "dashboard: saved items section");
+        assert(!!gi(f, "profileForm"), "dashboard: profile form");
+        assert(!gi(f, "dashSettingsBtn"), "dashboard: the separate header Settings gear is removed");
+        var savedLink = $$(f, "a[data-usection]").filter(function (a) {
+          return a.getAttribute("data-usection") === "saved";
+        })[0];
+        if (savedLink) {
+          savedLink.click();
+          await sleep(150);
+          assert(savedLink.getAttribute("aria-current") === "page", "dashboard: aria-current on section switch");
+        }
+        assert(!gi(f, "userLogoutBtn"), "dashboard: sidebar logout button stays removed (header account menu only)");
+
+        // Header account menu: identity + My Profile / Settings / Sign Out
+        gi(f, "userAccountBtn").click();
+        await sleep(120);
+        assert(!gi(f, "userAccountMenu").classList.contains("hidden"), "account: menu opens on name click");
+        assert(!!gi(f, "userAccountProfile") && !!gi(f, "userAccountSettings") && !!gi(f, "userAccountLogout"),
+          "account: menu lists My Profile, Settings, Sign Out");
+        assert(gi(f, "userMenuName").textContent.trim().length > 0, "account: menu shows the display name");
+        assert(gi(f, "userMenuEmail").textContent.indexOf("@") >= 0, "account: menu shows the email");
+        assert(!!gi(f, "userMenuAvatar"), "account: menu shows an avatar");
+        gi(f, "userAccountSettings").click();
+        await sleep(120);
+        assert(!gi(f, "dashSettingsPanel").classList.contains("hidden"),
+          "account: Settings opens the quick settings panel");
+        gi(f, "mainContent").click();
+        await sleep(80);
+        assert(gi(f, "dashSettingsPanel").classList.contains("hidden"),
+          "account: clicking away closes the quick settings panel");
+        gi(f, "userAccountBtn").click();
+        await sleep(100);
+        gi(f, "userAccountProfile").click();
+        await sleep(150);
+        assert(!gi(f, "sectionDashProfile").classList.contains("hidden"),
+          "account: My Profile jumps to the profile section");
+        f.contentWindow.showUserSection("home");
+        await sleep(100);
+
+        // Barangay Services is a clickable label; REQUEST CERTIFICATE is hidden until it is clicked
+        var bsToggle = gi(f, "barangayServicesToggle");
+        assert(!!bsToggle, "services: Barangay Services label is a clickable control");
+        assert(gi(f, "barangayServicesMenu").classList.contains("hidden"),
+          "services: REQUEST CERTIFICATE starts hidden");
+        if (bsToggle) {
+          bsToggle.click();
+          await sleep(150);
+          assert(!gi(f, "barangayServicesMenu").classList.contains("hidden"),
+            "services: clicking Barangay Services reveals REQUEST CERTIFICATE");
+          assert(bsToggle.getAttribute("aria-expanded") === "true",
+            "services: expanded state is exposed");
+          var certLink = $$(f, "#barangayServicesMenu a[data-usection]").filter(function (a) {
+            return a.getAttribute("data-usection") === "certificates";
+          })[0];
+          assert(!!certLink && certLink.textContent.indexOf("REQUEST CERTIFICATE") >= 0,
+            "services: REQUEST CERTIFICATE link is inside the group");
+          bsToggle.click();
+          await sleep(150);
+          assert(gi(f, "barangayServicesMenu").classList.contains("hidden"),
+            "services: clicking again collapses the group");
+        }
+      }
+      closeFrame(f);
+
+      // Deep link straight to the certificates section opens the group too
+      f = await loadPage("user-dashboard.html#certificates");
+      if (assert(!!f, "services: certificates deep link loads")) {
+        assert(!gi(f, "sectionDashCertificates").classList.contains("hidden"),
+          "services: certificates section is shown from the deep link");
+        assert(!gi(f, "barangayServicesMenu").classList.contains("hidden"),
+          "services: the group auto-expands when its section is shown");
+      }
+      closeFrame(f);
+
+      // ---------- 6. public news: search, filters, URL, featured ----------
+      f = await loadPage("news.html");
+      if (assert(!!f, "news page loads")) {
+        assert(!!gi(f, "newsCatFilter") && !!gi(f, "newsDateFilter"), "news: category + date filters");
+        setInput(gi(f, "newsSearch"), "E2E");
+        await sleep(300);
+        var countText = gi(f, "newsCount") ? gi(f, "newsCount").textContent : "";
+        assert(countText.indexOf("news found") >= 0, "news: result count text", countText.trim());
+        var marks = $$(f, "#newsList mark.hl");
+        assert(marks.length > 0, "news: search terms highlighted", marks.length + " marks");
+        assert(f.contentWindow.location.hash.indexOf("q=E2E") >= 0, "news: URL hash synced", f.contentWindow.location.hash);
+        assert(pageText(f).indexOf("E2E Test Article XYZ") >= 0, "news: matching article listed");
+        var pubFeedCards = $$(f, "#newsList .feed-card");
+        assert(pubFeedCards.length >= 1, "news: renders Facebook-style feed cards",
+          pubFeedCards.length + " cards");
+        assert(!!$(f, "#newsList .feed-actions") && !!$(f, "#newsList .feed-image-wrap, #newsList .feed-image"),
+          "news: feed card has action bar + media");
+
+        setInput(gi(f, "newsSearch"), "zzzqqq");
+        await sleep(300);
+        assert(pageText(f).indexOf("No news found") >= 0, "news: empty state on no match");
+
+        setInput(gi(f, "newsSearch"), "");
+        setInput(gi(f, "newsCatFilter"), "Health");
+        await sleep(300);
+        assert(pageText(f).indexOf("E2E Test Article XYZ") >= 0, "news: category filter keeps Health article");
+        assert(f.contentWindow.location.hash.indexOf("cat=Health") >= 0, "news: category in URL hash");
+        setInput(gi(f, "newsCatFilter"), "");
+        setInput(gi(f, "newsDateFilter"), "year");
+        await sleep(250);
+        assert(f.contentWindow.location.hash.indexOf("date=year") >= 0, "news: date filter in URL hash");
+        setInput(gi(f, "newsDateFilter"), "");
+        await sleep(250);
+
+        var items = $$(f, "#newsList .feed-card");
+        var e2eIdx = -1;
+        for (var k = 0; k < items.length; k++) {
+          if (items[k].textContent.indexOf("E2E Test Article XYZ") >= 0) { e2eIdx = k; break; }
+        }
+        var orderOk = e2eIdx >= 0;
+        for (var k2 = 0; k2 < e2eIdx; k2++) {
+          if (items[k2].textContent.indexOf("FEATURED") < 0) orderOk = false;
+        }
+        assert(orderOk, "news: pinned article listed first with FEATURED badge", "idx=" + e2eIdx);
+      }
+
+      // ---------- 7. news read from URL hash + detail modal ----------
+      closeFrame(f);
+      f = await loadPage("news.html#q=E2E&cat=Health");
+      if (assert(!!f, "news page with hash loads")) {
+        await sleep(350);
+        assert(gi(f, "newsSearch") && gi(f, "newsSearch").value === "E2E", "news: q read from URL");
+        assert(gi(f, "newsCatFilter") && gi(f, "newsCatFilter").value === "Health", "news: cat read from URL");
+        assert(pageText(f).indexOf("E2E Test Article XYZ") >= 0, "news: filtered from URL state");
+
+        var viewsBefore = getViewLog();
+        var viewTotalBefore = 0;
+        if (viewsBefore) Object.keys(viewsBefore).forEach(function (d) { viewTotalBefore += Number(viewsBefore[d] || 0); });
+
+        var detailBtn = $$(f, "#newsList .feed-title")[0];
+        if (assert(!!detailBtn, "news: feed card title opens details")) {
+          detailBtn.click();
+          await sleep(350);
+          var modal = gi(f, "detailModal");
+          assert(!!modal && modal.classList.contains("open"), "modal: detail modal opens");
+          var viewsAfter = getViewLog();
+          var viewTotalAfter = 0;
+          if (viewsAfter) Object.keys(viewsAfter).forEach(function (d) { viewTotalAfter += Number(viewsAfter[d] || 0); });
+          assert(viewTotalAfter > viewTotalBefore, "modal: news view logged", viewTotalBefore + " -> " + viewTotalAfter);
+
+          var saveBtn = $$(f, "[data-save-news]")[0];
+          if (assert(!!saveBtn, "modal: save/bookmark button")) {
+            saveBtn.click();
+            await sleep(200);
+            var bm = getBookmarks();
+            var hasBm = bm.some(function (b) { return b.type === "news" && b.id === e2eNewsId; });
+            var labelNow = saveBtn.textContent.trim().toUpperCase();
+            assert(hasBm || labelNow === "SAVED", "modal: article bookmarked", labelNow);
+            saveBtn.click(); // toggle back
+            await sleep(150);
+          }
+
+          var commentForm = $(f, ".comment-form");
+          if (assert(!!commentForm, "modal: comment form (logged in)")) {
+            setInput(gi(f, "commentInput"), "E2E comment works");
+            commentForm.querySelector("button[type='submit']").click();
+            await sleep(300);
+            var clist = gi(f, "commentsList");
+            assert(!!clist && clist.textContent.indexOf("E2E comment works") >= 0, "modal: comment posted");
+
+            var focusables = modal.querySelectorAll("a[href], button:not([disabled]), textarea, input");
+            if (focusables.length >= 2) {
+              var first = focusables[0], last = focusables[focusables.length - 1];
+              last.focus();
+              f.contentDocument.dispatchEvent(new f.contentWindow.KeyboardEvent("keydown",
+                { key: "Tab", bubbles: true, cancelable: true }));
+              assert(f.contentDocument.activeElement === first, "modal: focus trap wraps Tab",
+                f.contentDocument.activeElement && (f.contentDocument.activeElement.id || f.contentDocument.activeElement.tagName));
+            }
+            esc(f);
+            await sleep(250);
+            assert(!gi(f, "detailModal").classList.contains("open"), "modal: Escape closes detail modal");
+          }
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 8. announcements: search + filter ----------
+      f = await loadPage("announcements.html");
+      if (assert(!!f, "announcements page loads")) {
+        assert(!!gi(f, "annSearch"), "announcements: search box");
+        assert(!!gi(f, "annCount"), "announcements: result count element");
+        setInput(gi(f, "annSearch"), "e");
+        await sleep(300);
+        var annCount = gi(f, "annCount") ? gi(f, "annCount").textContent : "";
+        assert(annCount.length > 0, "announcements: count text updates", annCount.trim());
+        assert(f.contentWindow.location.hash.indexOf("q=") >= 0, "announcements: URL hash synced");
+        setInput(gi(f, "annSearch"), "zzzqqq");
+        await sleep(300);
+        var annItems = $$(f, "#announcementsList .list-item");
+        assert(annItems.length === 0 || pageText(f).indexOf("No announcements") >= 0,
+          "announcements: empty state on no match");
+        setInput(gi(f, "annSearch"), "");
+        await sleep(250);
+      }
+      closeFrame(f);
+
+      // ---------- 9. events RSVP ----------
+      f = await loadPage("events.html");
+      if (assert(!!f, "events page loads")) {
+        var rsvpBtn = $$(f, "[data-rsvp]")[0];
+        if (assert(!!rsvpBtn, "events: RSVP button")) {
+          rsvpBtn.click();
+          await sleep(300);
+          var rsvps = [];
+          try { rsvps = JSON.parse(localStorage.getItem("communityRsvps") || "[]"); } catch (e) {}
+          assert(rsvps.length >= 1, "events: RSVP stored", rsvps.length + " rsvps");
+          assert(rsvpBtn.textContent.indexOf("YOU'RE GOING") >= 0 || rsvpBtn.classList.contains("active"),
+            "events: button shows going state");
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 10. contact form ----------
+      f = await loadPage("contact.html");
+      if (assert(!!f, "contact page loads")) {
+        setInput(gi(f, "fullName"), "E2E Tester");
+        setInput(gi(f, "email"), "e2e@test.com");
+        setInput(gi(f, "subject"), "Automated test");
+        setInput(gi(f, "message"), "This message was sent by the automated test suite.");
+        var contactBtn = gi(f, "contactForm").querySelector("button[type='submit']");
+        if (contactBtn) contactBtn.click();
+        await sleep(350);
+        assert(!!localStorage.getItem("ccContactLastSent"), "contact: submission recorded");
+        assert(pageText(f).indexOf("Your message has been sent") >= 0, "contact: success feedback shown");
+      }
+      closeFrame(f);
+
+      // ---------- 11. gallery lightbox ----------
+      f = await loadPage("gallery.html");
+      if (assert(!!f, "gallery page loads")) {
+        var photo = $(f, ".gallery-item");
+        if (assert(!!photo, "gallery: photo item")) {
+          photo.click();
+          await sleep(300);
+          assert(gi(f, "lightbox").classList.contains("open"), "gallery: lightbox opens");
+          assert(gi(f, "lightbox").getAttribute("role") === "dialog", "gallery: lightbox has dialog role");
+          esc(f);
+          await sleep(250);
+          assert(!gi(f, "lightbox").classList.contains("open"), "gallery: Escape closes lightbox");
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 12. i18n toggle ----------
+      f = await loadPage("news.html");
+      if (assert(!!f, "news page loads for i18n")) {
+        var langBtn = gi(f, "langToggleBtn");
+        if (assert(!!langBtn, "i18n: language toggle exists")) {
+          langBtn.click();
+          await sleep(400);
+          var txt = pageText(f);
+          assert(txt.indexOf("Mga Balita") >= 0 || txt.indexOf("balita ang nahanap") >= 0,
+            "i18n: switches to Filipino");
+          var bc = $(f, ".breadcrumb");
+          assert(!!bc && bc.textContent.indexOf("Mga Balita") >= 0, "i18n: breadcrumb translated");
+          gi(f, "langToggleBtn").click();
+          await sleep(400);
+          txt = pageText(f);
+          assert(txt.indexOf("news found") >= 0 && txt.indexOf("Home") >= 0,
+            "i18n: switches back to English");
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 13. a11y extras on a second page ----------
+      f = await loadPage("contact.html");
+      if (assert(!!f, "contact page loads for a11y")) {
+        assert(!!$(f, ".skip-link"), "contact: skip link present");
+        assert(gi(f, "mainContent") !== null, "contact: mainContent target");
+        var ariaCurrent = $$(f, "nav.main-nav a[aria-current='page']");
+        assert(ariaCurrent.length === 1, "contact: exactly one nav link aria-current", ariaCurrent.length);
+      }
+      closeFrame(f);
+
+      // ---------- 14. admin delete flow (confirm modal + toast) ----------
+      f = await loadPage("admin.html");
+      if (assert(!!f, "admin reloads for delete flow")) {
+        var deleteBtn = $$(f, "#newsTableBody button").filter(function (b) {
+          return b.textContent.trim().toUpperCase() === "DELETE" &&
+                 b.closest("tr") && b.closest("tr").textContent.indexOf("E2E Test Article XYZ") >= 0;
+        })[0];
+        if (assert(!!deleteBtn, "admin: DELETE button for test article")) {
+          deleteBtn.click();
+          await sleep(300);
+          var cm = gi(f, "confirmModal");
+          assert(!!cm && cm.classList.contains("open"), "admin: confirmation modal opens");
+          assert(cm.textContent.indexOf("Are you sure you want to delete this news?") >= 0,
+            "admin: spec delete message");
+          var okBtn = gi(f, "confirmOkBtn");
+          if (okBtn) okBtn.click();
+          await sleep(400);
+          assert(!getNews().some(function (n) { return n.title === "E2E Test Article XYZ"; }),
+            "admin: news deleted");
+          assert(gi(f, "newsTableBody").textContent.indexOf("E2E Test Article XYZ") < 0,
+            "admin: table refreshed after delete");
+          assert(!!$(f, ".toast"), "admin: success toast after delete");
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 14b. admin users section (view / search / delete) ----------
+      f = await loadPage("admin.html");
+      if (assert(!!f, "admin reloads for users section")) {
+        var usersLink = $$(f, ".admin-sidebar a[data-section]").filter(function (a) {
+          return a.getAttribute("data-section") === "users";
+        })[0];
+        if (assert(!!usersLink, "admin: USERS sidebar link exists")) {
+          usersLink.click();
+          await sleep(200);
+          assert(usersLink.getAttribute("aria-current") === "page", "admin: users section aria-current");
+          assert(!gi(f, "sectionUsers").classList.contains("hidden"), "admin: users section visible");
+        }
+        var uBody = gi(f, "usersTableBody");
+        assert(!!uBody && uBody.textContent.indexOf("e2etest") >= 0, "admin: registered user listed");
+        assert(uBody.textContent.indexOf("SIGNED IN") >= 0, "admin: signed-in badge on current user");
+        var uCount = gi(f, "usersTableCount");
+        assert(!!uCount && uCount.textContent.indexOf("items") >= 0, "admin: users count shows item total",
+          uCount ? uCount.textContent.trim() : "missing");
+
+        setInput(gi(f, "usersTableSearch"), "e2etest");
+        await sleep(50);
+        var uText = gi(f, "usersTableBody").textContent;
+        assert(uText.indexOf("e2etest") >= 0 && uText.indexOf("No matching results") < 0,
+          "admin: users search keeps matching row");
+
+        setInput(gi(f, "usersTableSearch"), "zzzqqq");
+        await sleep(50);
+        assert(gi(f, "usersTableBody").textContent.indexOf("No matching results.") >= 0,
+          "admin: users search shows no-results row");
+        setInput(gi(f, "usersTableSearch"), "");
+        await sleep(50);
+
+        // VIEW opens the profile detail modal
+        var viewBtn = $$(f, "#usersTableBody button").filter(function (b) {
+          return b.textContent.trim().toUpperCase() === "VIEW" &&
+            b.closest("tr") && b.closest("tr").textContent.indexOf("e2etest") >= 0;
+        })[0];
+        if (assert(!!viewBtn, "admin: VIEW button for e2etest")) {
+          viewBtn.click();
+          await sleep(250);
+          var dm = gi(f, "detailModal");
+          assert(!!dm && dm.classList.contains("open"), "admin: user detail modal opens");
+          assert(dm.textContent.indexOf("e2etest") >= 0, "admin: detail modal shows username");
+          assert(dm.textContent.indexOf("Event RSVPs") >= 0, "admin: detail modal shows activity rows");
+          esc(f);
+          await sleep(200);
+          assert(!gi(f, "detailModal").classList.contains("open"), "admin: Escape closes user detail modal");
+        }
+
+        // DELETE a throwaway account (confirm modal + data purge)
+        var seededUsers = getUsers().concat([{
+          id: "e2e_tmpuser", username: "tempdelete", password: "x",
+          phone: "", address: "", joined: "2026-01-01"
+        }]);
+        localStorage.setItem("communityUsers", JSON.stringify(seededUsers));
+        f.contentWindow.renderUserTable();
+        await sleep(150);
+        var delUserBtn = $$(f, "#usersTableBody button").filter(function (b) {
+          return b.textContent.trim().toUpperCase() === "DELETE" &&
+            b.closest("tr") && b.closest("tr").textContent.indexOf("tempdelete") >= 0;
+        })[0];
+        if (assert(!!delUserBtn, "admin: DELETE button for temp user")) {
+          delUserBtn.click();
+          await sleep(300);
+          var ucm = gi(f, "confirmModal");
+          assert(!!ucm && ucm.classList.contains("open"), "admin: user confirm modal opens");
+          assert(ucm.textContent.indexOf("Are you sure you want to delete this user?") >= 0,
+            "admin: user delete spec message");
+          var uok = gi(f, "confirmOkBtn");
+          if (uok) uok.click();
+          await sleep(400);
+          assert(!getUsers().some(function (u) { return u.username === "tempdelete"; }),
+            "admin: temp user deleted");
+          assert(gi(f, "usersTableBody").textContent.indexOf("tempdelete") < 0,
+            "admin: users table refreshed after delete");
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 14c. header notification bells (admin + member) ----------
+      f = await loadPage("admin.html");
+      if (assert(!!f, "admin reloads for notification bell")) {
+        var bellBtn = gi(f, "adminNotifBtn");
+        if (assert(!!bellBtn, "admin: bell button exists")) {
+          var bellDot = gi(f, "adminNotifDot");
+          assert(!!bellDot && !bellDot.hidden, "admin: bell dot shows unseen count");
+          bellBtn.click();
+          await sleep(200);
+          var bellPanel = gi(f, "adminNotifPanel");
+          assert(!!bellPanel && !bellPanel.classList.contains("hidden"), "admin: bell panel opens");
+          assert(bellBtn.getAttribute("aria-expanded") === "true", "admin: bell aria-expanded true");
+          var bellItems = gi(f, "adminNotifList").querySelectorAll(".notif-item");
+          assert(bellItems.length > 0, "admin: panel has notification items", bellItems.length + " items");
+          assert(gi(f, "adminNotifDot").hidden, "admin: dot clears after opening panel");
+          f.contentDocument.body.click();
+          await sleep(150);
+          assert(gi(f, "adminNotifPanel").classList.contains("hidden"), "admin: outside click closes panel");
+          bellBtn.click();
+          await sleep(150);
+          esc(f);
+          await sleep(150);
+          assert(gi(f, "adminNotifPanel").classList.contains("hidden"), "admin: Escape closes panel");
+        }
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html");
+      if (assert(!!f, "user dashboard loads for bell test")) {
+        var uBell = gi(f, "userNotifBtn");
+        if (assert(!!uBell, "member: bell button exists")) {
+          uBell.click();
+          await sleep(200);
+          var uPanel = gi(f, "userNotifPanel");
+          assert(!!uPanel && !uPanel.classList.contains("hidden"), "member: bell panel opens");
+          assert(gi(f, "userNotifList").querySelectorAll(".notif-item").length > 0,
+            "member: panel has notification items");
+          var viewAllBtn = $(f, "#userNotifPanel .notif-view-all");
+          if (assert(!!viewAllBtn, "member: VIEW ALL button")) {
+            viewAllBtn.click();
+            await sleep(200);
+            assert(gi(f, "userNotifPanel").classList.contains("hidden"), "member: VIEW ALL closes panel");
+            var notifLink = $$(f, "#userSidebar a[data-usection]").filter(function (a) {
+              return a.getAttribute("data-usection") === "notifications";
+            })[0];
+            assert(!notifLink, "member: notifications sidebar button stays removed");
+            assert(!gi(f, "sectionDashNotifications").classList.contains("hidden"),
+              "member: notifications section visible");
+          }
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 14c2. Facebook-style news feed on the member dashboard ----------
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "dashboard news feed loads")) {
+        assert(!gi(f, "sectionDashNews").classList.contains("hidden"), "feed: news section visible via deep link");
+        var feedCards = $$(f, "#dashNewsList .feed-card");
+        assert(feedCards.length >= 1, "feed: Facebook-style cards rendered", feedCards.length + " cards");
+        assert(feedCards.length <= 3, "feed: first page limited for infinite scroll", feedCards.length + " cards");
+        assert(!!$(f, "#dashNewsList .feed-image") && !!$(f, "#dashNewsList .feed-actions"),
+          "feed: full-width image + action bar present");
+        var likeBtn = $(f, "#dashNewsList .feed-action-btn[data-like-news]");
+        if (assert(!!likeBtn, "feed: like button present")) {
+          var firstCount = $(f, "#dashNewsList [data-like-count]").textContent;
+          likeBtn.click();
+          await sleep(150);
+          assert(likeBtn.classList.contains("liked") && likeBtn.getAttribute("aria-pressed") === "true",
+            "feed: like toggles liked state");
+          assert($(f, "#dashNewsList [data-like-count]").textContent !== firstCount,
+            "feed: like count updates");
+          likeBtn.click();
+          await sleep(150);
+          assert(!likeBtn.classList.contains("liked"), "feed: like toggles back off");
+          assert($(f, "#dashNewsList [data-like-count]").textContent === firstCount,
+            "feed: like count restored after unliking");
+        }
+        var feedCommentBtn = $$(f, "#dashNewsList .feed-action-btn").filter(function (b) {
+          return b.textContent.indexOf("Comment") >= 0;
+        })[0];
+        if (assert(!!feedCommentBtn, "feed: comment button present")) {
+          feedCommentBtn.click();
+          await sleep(300);
+          assert(!!gi(f, "detailModal") && !gi(f, "detailModal").classList.contains("hidden"),
+            "feed: comment opens the news detail modal");
+          esc(f);
+          await sleep(150);
+        }
+        var feedShareBtn = $$(f, "#dashNewsList .feed-action-btn").filter(function (b) {
+          return b.textContent.indexOf("Share") >= 0;
+        })[0];
+        if (assert(!!feedShareBtn, "feed: share button present")) {
+          clearToasts(f);
+          feedShareBtn.click();
+          var shareToast = "";
+          for (var si = 0; si < 14 && !shareToast; si++) {
+            shareToast = toastTexts(f);
+            if (!shareToast) await sleep(150);
+          }
+          assert(shareToast.indexOf("clipboard") >= 0 || shareToast.indexOf("news.html") >= 0,
+            "feed: share toasts the copied link", shareToast);
+        }
+        var feedSaveBtn = $(f, "#dashNewsList .feed-action-btn[data-save-news]");
+        if (assert(!!feedSaveBtn, "feed: save button present")) {
+          clearToasts(f);
+          feedSaveBtn.click();
+          await sleep(200);
+          assert(feedSaveBtn.classList.contains("saved"), "feed: save marks the button saved");
+          feedSaveBtn.click();
+          await sleep(200);
+          assert(!feedSaveBtn.classList.contains("saved"), "feed: save toggles back off");
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 14c3. Facebook-style activities feed on the member dashboard ----------
+      f = await loadPage("user-dashboard.html#activities");
+      if (assert(!!f, "dashboard activities feed loads")) {
+        assert(!gi(f, "sectionDashActivities").classList.contains("hidden"),
+          "activities feed: section visible via deep link");
+        var actCards = $$(f, "#dashActivitiesList .feed-card");
+        assert(actCards.length >= 1, "activities feed: Facebook-style cards rendered",
+          actCards.length + " cards");
+        assert(actCards.length <= 3, "activities feed: first page limited for infinite scroll",
+          actCards.length + " cards");
+        assert(!!$(f, "#dashActivitiesList .feed-image") && !!$(f, "#dashActivitiesList .feed-actions"),
+          "activities feed: full-width image + action bar present");
+        var actLikeBtn = $(f, "#dashActivitiesList .feed-action-btn[data-like-news]");
+        if (assert(!!actLikeBtn, "activities feed: like button present")) {
+          var actCount0 = $(f, "#dashActivitiesList [data-like-count]").textContent;
+          actLikeBtn.click();
+          await sleep(150);
+          assert(actLikeBtn.classList.contains("liked"), "activities feed: like toggles liked state");
+          assert($(f, "#dashActivitiesList [data-like-count]").textContent !== actCount0,
+            "activities feed: like count updates");
+          actLikeBtn.click();
+          await sleep(150);
+          assert(!actLikeBtn.classList.contains("liked"), "activities feed: like toggles back off");
+        }
+        var actDetailBtn = $$(f, "#dashActivitiesList .feed-action-btn").filter(function (b) {
+          return b.textContent.indexOf("Details") >= 0;
+        })[0];
+        if (assert(!!actDetailBtn, "activities feed: details button present")) {
+          actDetailBtn.click();
+          await sleep(300);
+          assert(!!gi(f, "detailModal") && !gi(f, "detailModal").classList.contains("hidden"),
+            "activities feed: details opens the activity modal");
+          esc(f);
+          await sleep(150);
+        }
+      }
+        closeFrame(f);
+
+        // ---------- 14c4. video posts (upload field + feed/detail rendering) ----------
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "video: dashboard loads for seeding")) {
+        var vNews = getNews();
+        // Pin it so it lands on the first feed page regardless of date order.
+        vNews.unshift({
+          id: "e2e_video1", title: "ZZ Video Story", category: "Community",
+          date: "2026-10-02", description: "A post that carries a video clip.",
+          details: "Full details for the video test.", image: "",
+          video: "data:video/mp4;base64,ZZVIDEODATA", pinned: true
+        });
+        localStorage.setItem("communityNews", JSON.stringify(vNews));
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "video: feed reloads after seeding")) {
+        var vCard = $$(f, "#dashNewsList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Video Story") >= 0;
+        })[0];
+        if (assert(!!vCard, "video: seeded video post rendered in feed")) {
+          var vEl = vCard.querySelector(".feed-video");
+          if (assert(!!vEl, "video: feed card renders a <video> element")) {
+            assert(vEl.getAttribute("src") === "data:video/mp4;base64,ZZVIDEODATA",
+              "video: feed <video> carries the stored source", vEl.getAttribute("src"));
+            assert(vEl.hasAttribute("controls"), "video: feed <video> exposes playback controls");
+          }
+        }
+        // Open the detail modal and confirm the video player is present there too.
+        var vTitle = $$(f, "#dashNewsList .feed-title").filter(function (h) {
+          return h.textContent.indexOf("ZZ Video Story") >= 0;
+        })[0];
+        if (assert(!!vTitle, "video: feed title clickable")) {
+          vTitle.click();
+          await sleep(300);
+          var dVideo = $(f, "#detailModal .detail-media-video");
+          assert(!!dVideo && dVideo.getAttribute("src") === "data:video/mp4;base64,ZZVIDEODATA",
+            "video: detail modal renders the video player");
+          esc(f);
+          await sleep(150);
+        }
+      }
+      closeFrame(f);
+
+      // Admin form should expose the video field and prefill it when editing.
+      f = await loadPage("admin.html#news");
+      if (assert(!!f, "video: admin news panel loads")) {
+        assert(!!gi(f, "newsVideo") && !!gi(f, "newsVideoFile") && !!gi(f, "newsVideoPreview"),
+          "video: admin form has video path, file picker, and preview");
+        var editVideoBtn = $$(f, "#newsTableBody button").filter(function (b) {
+          return (b.getAttribute("onclick") || "").indexOf("editNews") === 0 &&
+                 b.getAttribute("onclick").indexOf("e2e_video1") >= 0;
+        })[0];
+        // Fallback: call editNews directly if the row button markup differs.
+        if (editVideoBtn) { editVideoBtn.click(); }
+        else { f.contentWindow.editNews("e2e_video1"); }
+        await sleep(250);
+        var vInput = gi(f, "newsVideo");
+        if (assert(!!vInput, "video: edit exposes the video input")) {
+          assert(vInput.value === "data:video/mp4;base64,ZZVIDEODATA",
+            "video: edit prefills the stored video value", vInput.value);
+        }
+      }
+      closeFrame(f);
+
+      // Remove the seeded video post so it does not affect later sections.
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "video: dashboard loads for cleanup")) {
+        var cleaned = getNews().filter(function (n) { return n.id !== "e2e_video1"; });
+        localStorage.setItem("communityNews", JSON.stringify(cleaned));
+      }
+      closeFrame(f);
+
+      // IndexedDB-backed video: the record holds a tiny "idb:" ref, and the
+      // renderer swaps it for a playable blob URL (no localStorage size limit).
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "video: dashboard loads for idb seeding")) {
+        // Put a tiny blob in the video store and seed a post that references it.
+        await f.contentWindow.openVideoDb().then(function (db) {
+          return new Promise(function (resolve) {
+            var tx = db.transaction("videos", "readwrite");
+            tx.objectStore("videos").put(new Blob(["idbtest"], { type: "video/mp4" }), "e2e_vid_key");
+            tx.oncomplete = function () { resolve(); };
+            tx.onerror = function () { resolve(); };
+          });
+        });
+        var idbNews = getNews();
+        idbNews.unshift({
+          id: "e2e_idbvideo1", title: "ZZ IDB Video Story", category: "Community",
+          date: "2026-10-05", description: "A post with an IndexedDB video.",
+          details: "Full details for the idb video test.", image: "",
+          video: "idb:e2e_vid_key", pinned: true
+        });
+        localStorage.setItem("communityNews", JSON.stringify(idbNews));
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "video: feed reloads after idb seeding")) {
+        var idbCard = $$(f, "#dashNewsList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ IDB Video Story") >= 0;
+        })[0];
+        if (assert(!!idbCard, "video: idb video post rendered in feed")) {
+          var idbEl = idbCard.querySelector(".feed-video");
+          if (assert(!!idbEl, "video: idb feed card renders a <video> element")) {
+            // The feed auto-resolves idb refs to a playable blob URL, so the
+            // src should be a blob: URL (never a giant data URL / localStorage).
+            var feedSrc = idbEl.getAttribute("src") || "";
+            assert(feedSrc.indexOf("data:") !== 0 &&
+                   (!feedSrc || feedSrc.indexOf("blob:") === 0),
+              "video: idb feed video uses a blob URL, not a giant data URL", feedSrc);
+            // resolveVideoRefs() runs after insertion and swaps the ref for a
+            // blob URL; call it on a controlled element so the test can assert
+            // the emitted markup and the resolved URL without racing the feed.
+            var probe = document.createElement("div");
+            probe.innerHTML = f.contentWindow.newsMediaHtml(
+              { video: "idb:e2e_vid_key", title: "probe" }, {});
+            var probeVid = probe.querySelector("video");
+            if (assert(!!probeVid, "video: newsMediaHtml emits a <video> for an idb ref")) {
+              assert(probeVid.getAttribute("data-video-ref") === "idb:e2e_vid_key",
+                "video: idb ref kept as data-video-ref (not a giant src)",
+                probeVid.getAttribute("data-video-ref"));
+              assert(!probeVid.getAttribute("src"),
+                "video: no raw src until the blob is resolved");
+              f.contentWindow.resolveVideoRefs(probe);
+              await sleep(200);
+              var resolvedSrc = probeVid.getAttribute("src") || "";
+              assert(resolvedSrc.indexOf("blob:") === 0,
+                "video: idb ref resolved to a playable blob URL", resolvedSrc);
+            }
+          }
+        }
+      }
+      closeFrame(f);
+
+      // Cleanup the idb video post + its stored blob.
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "video: dashboard loads for idb cleanup")) {
+        var cleanedIdb = getNews().filter(function (n) { return n.id !== "e2e_idbvideo1"; });
+        localStorage.setItem("communityNews", JSON.stringify(cleanedIdb));
+        await f.contentWindow.deleteVideoRef("idb:e2e_vid_key");
+      }
+      closeFrame(f);
+
+      // ---------- 14c5. multi-photo news posts (2+ images collage) ----------
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "photos: dashboard loads for seeding")) {
+        var pNews = getNews();
+        // Three photos, pinned so it lands on the first feed page.
+        pNews.unshift({
+          id: "e2e_multi1", title: "ZZ Multi Photo Story", category: "Community",
+          date: "2026-10-03", description: "A post that carries several photos.",
+          details: "Full details for the multi-photo test.",
+          image: "data:image/jpeg;base64,ZZP1",
+          images: ["data:image/jpeg;base64,ZZP1", "data:image/jpeg;base64,ZZP2", "data:image/jpeg;base64,ZZP3"],
+          pinned: true
+        });
+        // A five-photo post should collapse to 4 tiles + a "+1" overlay.
+        pNews.unshift({
+          id: "e2e_multi5", title: "ZZ Five Photo Story", category: "Community",
+          date: "2026-10-04", description: "A post that carries five photos.",
+          details: "Full details for the five-photo test.",
+          image: "data:image/jpeg;base64,ZZF1",
+          images: ["data:image/jpeg;base64,ZZF1", "data:image/jpeg;base64,ZZF2",
+                   "data:image/jpeg;base64,ZZF3", "data:image/jpeg;base64,ZZF4",
+                   "data:image/jpeg;base64,ZZF5"],
+          pinned: true
+        });
+        localStorage.setItem("communityNews", JSON.stringify(pNews));
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "photos: feed reloads after seeding")) {
+        var mCard = $$(f, "#dashNewsList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Multi Photo Story") >= 0;
+        })[0];
+        if (assert(!!mCard, "photos: 3-photo post rendered in feed")) {
+          var collage = mCard.querySelector(".news-collage");
+          if (assert(!!collage, "photos: feed card renders a collage")) {
+            assert(collage.classList.contains("collage-3"),
+              "photos: 3 photos use the collage-3 layout", collage.className);
+            assert(collage.querySelectorAll(".collage-tile").length === 3,
+              "photos: collage shows all 3 tiles");
+          }
+        }
+        // The detail modal should show the same collage.
+        var mTitle = $$(f, "#dashNewsList .feed-title").filter(function (h) {
+          return h.textContent.indexOf("ZZ Multi Photo Story") >= 0;
+        })[0];
+        if (assert(!!mTitle, "photos: multi-photo title clickable")) {
+          mTitle.click();
+          await sleep(300);
+          var dCollage = $(f, "#detailModal .news-collage");
+          assert(!!dCollage && dCollage.querySelectorAll(".collage-tile").length === 3,
+            "photos: detail modal renders the 3-photo collage");
+          esc(f);
+          await sleep(150);
+        }
+        // Five photos should collapse to 4 tiles with a "+1" veil.
+        var fiveCard = $$(f, "#dashNewsList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Five Photo Story") >= 0;
+        })[0];
+        if (assert(!!fiveCard, "photos: 5-photo post rendered in feed")) {
+          var fiveCollage = fiveCard.querySelector(".news-collage");
+          if (assert(!!fiveCollage, "photos: 5-photo card renders a collage")) {
+            assert(fiveCollage.querySelectorAll(".collage-tile").length === 4,
+              "photos: 5 photos collapse to 4 visible tiles");
+            var more = fiveCard.querySelector(".collage-more");
+            assert(!!more && more.textContent.trim() === "+1",
+              "photos: extra photo shown as a +1 overlay", more ? more.textContent : "none");
+          }
+        }
+      }
+      closeFrame(f);
+
+      // Admin form should prefill the images array when editing a multi-photo post.
+      f = await loadPage("admin.html#news");
+      if (assert(!!f, "photos: admin news panel loads")) {
+        f.contentWindow.editNews("e2e_multi1");
+        await sleep(250);
+        var imgJson = gi(f, "newsImagesJson");
+        if (assert(!!imgJson, "photos: admin form has the images JSON field")) {
+          var parsed = JSON.parse(imgJson.value || "[]");
+          assert(parsed.length === 3, "photos: edit prefills 3 stored images", parsed.length + " images");
+        }
+        var stripTiles = $$(f, "#newsImageStrip img");
+        assert(stripTiles.length === 3, "photos: edit shows 3 thumbnails in the strip",
+          stripTiles.length + " thumbs");
+        var pathBox = gi(f, "newsImage");
+        assert(!!pathBox && pathBox.value === "data:image/jpeg;base64,ZZP1",
+          "photos: first image mirrored into the path box");
+      }
+      closeFrame(f);
+
+      // Remove the seeded multi-photo posts so they do not affect later sections.
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "photos: dashboard loads for cleanup")) {
+        var cleanedP = getNews().filter(function (n) {
+          return n.id !== "e2e_multi1" && n.id !== "e2e_multi5";
+        });
+        localStorage.setItem("communityNews", JSON.stringify(cleanedP));
+      }
+      closeFrame(f);
+
+      // ---------- 14c6. activities gain multi-photo + multi-video like news ----------
+      f = await loadPage("admin.html#activities");
+      if (assert(!!f, "act-media: admin activities panel loads")) {
+        assert(!!gi(f, "activityVideoFile") && !!gi(f, "activityVideo") && !!gi(f, "activityVideoPreview"),
+          "act-media: admin activity form has video path, file picker, and preview");
+        assert(!!gi(f, "activityImageFile") && !!gi(f, "activityImagesJson") && !!gi(f, "activityImageStrip"),
+          "act-media: admin activity form has multi-photo file picker, JSON field, and strip");
+        assert(gi(f, "activityVideoFile").hasAttribute("multiple"),
+          "act-media: activity video picker accepts multiple files");
+        var actCount = gi(f, "activityImageCount");
+        assert(!!actCount, "act-media: activity form shows a photo count element");
+      }
+      closeFrame(f);
+
+      // Seed an activity with two photos + two videos.
+      f = await loadPage("user-dashboard.html#activities");
+      if (assert(!!f, "act-media: dashboard activities loads for seeding")) {
+        var acts = getActivities();
+        acts.unshift({
+          id: "e2e_actmedia1", name: "ZZ Act Media Story", date: "2099-12-31",
+          location: "Purok One", description: "An activity with photos and videos.",
+          image: "data:image/jpeg;base64,ZZA1",
+          images: ["data:image/jpeg;base64,ZZA1", "data:image/jpeg;base64,ZZA2"],
+          videos: ["data:video/mp4;base64,ZZAV1", "data:video/mp4;base64,ZZAV2"]
+        });
+        localStorage.setItem("communityActivities", JSON.stringify(acts));
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html#activities");
+      if (assert(!!f, "act-media: activities feed reloads after seeding")) {
+        var amCard = $$(f, "#dashActivitiesList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Act Media Story") >= 0;
+        })[0];
+        if (assert(!!amCard, "act-media: seeded multi-media activity rendered in feed")) {
+          var amVideos = amCard.querySelectorAll(".feed-video");
+          assert(amVideos.length === 2, "act-media: feed card renders both videos",
+            amVideos.length + " videos");
+          assert(amVideos[0].getAttribute("src") === "data:video/mp4;base64,ZZAV1" &&
+                 amVideos[1].getAttribute("src") === "data:video/mp4;base64,ZZAV2",
+            "act-media: both video sources carried into the players");
+          var amCollage = amCard.querySelector(".news-collage");
+          assert(!!amCollage && amCollage.querySelectorAll(".collage-tile").length === 2,
+            "act-media: 2 photos render as a collage next to the videos");
+        }
+        // The activity detail modal should show both players too.
+        var amTitle = $$(f, "#dashActivitiesList .feed-title").filter(function (h) {
+          return h.textContent.indexOf("ZZ Act Media Story") >= 0;
+        })[0];
+        if (assert(!!amTitle, "act-media: multi-media activity title clickable")) {
+          amTitle.click();
+          await sleep(300);
+          var amDetailVids = $$(f, "#detailModal .detail-media-video");
+          assert(amDetailVids.length === 2, "act-media: detail modal renders both videos",
+            amDetailVids.length + " videos");
+          esc(f);
+          await sleep(150);
+        }
+      }
+      closeFrame(f);
+
+      // resolveVideoSelection: an untouched video field keeps every stored video.
+      f = await loadPage("admin.html#activities");
+      if (assert(!!f, "act-media: admin activities panel loads for resolver")) {
+        f.contentWindow.editActivity("e2e_actmedia1");
+        await sleep(250);
+        var actVideoInput = gi(f, "activityVideo");
+        if (assert(!!actVideoInput, "act-media: edit exposes the video input")) {
+          assert(actVideoInput.value === "data:video/mp4;base64,ZZAV1",
+            "act-media: edit prefills the first stored video", actVideoInput.value);
+          var sel = await f.contentWindow.resolveVideoSelection(actVideoInput,
+            f.contentWindow.getMediaVideos(
+              f.contentWindow.loadActivitiesList().find(function (a) { return a.id === "e2e_actmedia1"; })));
+          assert(sel.unchanged === true && sel.videos.length === 2,
+            "act-media: untouched field keeps all stored videos on edit",
+            JSON.stringify(sel));
+        }
+      }
+      closeFrame(f);
+
+      // A news post with several videos should render one player per video.
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "act-media: dashboard news loads for multi-video seeding")) {
+        var mvNews = getNews();
+        mvNews.unshift({
+          id: "e2e_multivid", title: "ZZ Multi Video Story", category: "Community",
+          date: "2026-10-06", description: "A news post that carries two videos.",
+          details: "Full details for the multi-video test.", image: "",
+          videos: ["data:video/mp4;base64,ZZNV1", "data:video/mp4;base64,ZZNV2"],
+          pinned: true
+        });
+        localStorage.setItem("communityNews", JSON.stringify(mvNews));
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "act-media: news feed reloads after multi-video seeding")) {
+        var mvCard = $$(f, "#dashNewsList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Multi Video Story") >= 0;
+        })[0];
+        if (assert(!!mvCard, "act-media: multi-video news post rendered in feed")) {
+          var mvVids = mvCard.querySelectorAll(".feed-video");
+          assert(mvVids.length === 2, "act-media: news feed card renders both videos",
+            mvVids.length + " videos");
+          assert(mvVids[0].getAttribute("src") === "data:video/mp4;base64,ZZNV1" &&
+                 mvVids[1].getAttribute("src") === "data:video/mp4;base64,ZZNV2",
+            "act-media: both news video sources carried into the players");
+        }
+      }
+      closeFrame(f);
+
+      // Clean up the seeded activity + news posts.
+      f = await loadPage("user-dashboard.html#activities");
+      if (assert(!!f, "act-media: dashboard activities loads for cleanup")) {
+        var cleanedA = getActivities().filter(function (a) { return a.id !== "e2e_actmedia1"; });
+        localStorage.setItem("communityActivities", JSON.stringify(cleanedA));
+      }
+      closeFrame(f);
+      f = await loadPage("user-dashboard.html#news");
+      if (assert(!!f, "act-media: dashboard news loads for cleanup")) {
+        var cleanedMV = getNews().filter(function (n) { return n.id !== "e2e_multivid"; });
+        localStorage.setItem("communityNews", JSON.stringify(cleanedMV));
+      }
+      closeFrame(f);
+
+      // ---------- 14c7. activities.html keeps idb videos playable after re-render ----------
+      // refreshPublicLists() re-renders the activities grid on load and on every
+      // language toggle; it must re-run resolveVideoRefs so IndexedDB videos
+      // stay playable instead of collapsing to an empty <video>.
+      f = await loadPage("user-dashboard.html#activities");
+      if (assert(!!f, "act-refresh: dashboard activities loads for idb seeding")) {
+        await f.contentWindow.openVideoDb().then(function (db) {
+          return new Promise(function (resolve) {
+            var tx = db.transaction("videos", "readwrite");
+            tx.objectStore("videos").put(new Blob(["actidb"], { type: "video/mp4" }), "e2e_act_vid");
+            tx.oncomplete = function () { resolve(); };
+            tx.onerror = function () { resolve(); };
+          });
+        });
+        var actRefresh = getActivities();
+        actRefresh.unshift({
+          id: "e2e_actrefresh1", name: "ZZ Act Refresh Story", date: "2099-12-30",
+          location: "Plaza", description: "An activity with an IndexedDB video.",
+          image: "", videos: ["idb:e2e_act_vid"]
+        });
+        localStorage.setItem("communityActivities", JSON.stringify(actRefresh));
+      }
+      closeFrame(f);
+
+      f = await loadPage("activities.html");
+      if (assert(!!f, "act-refresh: activities page loads")) {
+        var refreshCard = $$(f, "#activitiesList .card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Act Refresh Story") >= 0;
+        })[0];
+        if (assert(!!refreshCard, "act-refresh: seeded activity rendered on public page")) {
+          var refreshVid = refreshCard.querySelector("video");
+          if (assert(!!refreshVid, "act-refresh: activity renders a video element")) {
+            var refreshSrc = refreshVid.getAttribute("src") || "";
+            assert(refreshSrc.indexOf("blob:") === 0,
+              "act-refresh: idb video resolved to a blob URL on first load", refreshSrc);
+            // Toggle the language: refreshPublicLists() re-renders the grid.
+            var langBtn = gi(f, "langToggleBtn");
+            if (assert(!!langBtn, "act-refresh: language toggle present")) {
+              langBtn.click();
+              // IndexedDB blob resolution is async; poll instead of a fixed wait.
+              var afterCard = null;
+              var afterVid = null;
+              var afterSrc = "";
+              for (var ar = 0; ar < 20; ar++) {
+                await sleep(200);
+                afterCard = $$(f, "#activitiesList .card").filter(function (c) {
+                  return c.textContent.indexOf("ZZ Act Refresh Story") >= 0;
+                })[0];
+                afterVid = afterCard ? afterCard.querySelector("video") : null;
+                afterSrc = afterVid ? (afterVid.getAttribute("src") || "") : "";
+                if (afterSrc.indexOf("blob:") === 0) break;
+              }
+              assert(afterSrc.indexOf("blob:") === 0,
+                "act-refresh: idb video still playable after language-toggle re-render", afterSrc);
+            }
+          }
+        }
+      }
+      closeFrame(f);
+
+      // Cleanup the activity + its stored blob; restore the shared language
+      // setting so later sections (which expect English) keep passing.
+      f = await loadPage("user-dashboard.html#activities");
+      if (assert(!!f, "act-refresh: dashboard activities loads for cleanup")) {
+        var cleanedR = getActivities().filter(function (a) { return a.id !== "e2e_actrefresh1"; });
+        localStorage.setItem("communityActivities", JSON.stringify(cleanedR));
+        localStorage.setItem("communityLang", "en");
+        await f.contentWindow.deleteVideoRef("idb:e2e_act_vid");
+      }
+      closeFrame(f);
+
+      // ---------- 14c8. announcements gain multi-photo + multi-video like news ----------
+      // The announcement form now mirrors the news form: several photos
+      // (hidden JSON field + path box), several videos (IndexedDB), and the
+      // public page / home / detail modal render them via newsMediaHtml.
+      f = await loadPage("admin.html#announcements");
+      if (assert(!!f, "ann-media: admin announcements panel loads")) {
+        assert(!!gi(f, "annImageFile"), "ann-media: photo picker present");
+        assert(!!gi(f, "annImagesJson"), "ann-media: images JSON field present");
+        assert(!!gi(f, "annImageStrip"), "ann-media: photo thumbnail strip present");
+        assert(!!gi(f, "annVideoFile"), "ann-media: video picker present");
+        assert(!!gi(f, "annVideo"), "ann-media: video path box present");
+
+        // Create an announcement through the real form with 2 photos + 1 video.
+        gi(f, "annTitle").value = "ZZ Announcement Media";
+        gi(f, "annCategory").value = "Community";
+        gi(f, "annDate").value = "2099-12-20";
+        gi(f, "annStatus").value = "Notice";
+        gi(f, "annDescription").value = "An announcement that carries photos and a video.";
+        var annImgs = ["data:image/jpeg;base64,ANNP1", "data:image/jpeg;base64,ANNP2"];
+        gi(f, "annImagesJson").value = JSON.stringify(annImgs);
+        gi(f, "annVideo").value = "https://example.com/live.mp4";
+        gi(f, "annForm").dispatchEvent(new Event("submit", { cancelable: true }));
+        await sleep(400);
+        var createdAnn = getAnnouncements().filter(function (a) {
+          return a.title === "ZZ Announcement Media";
+        })[0];
+        if (assert(!!createdAnn, "ann-media: announcement saved from the form")) {
+          assert(Array.isArray(createdAnn.images) && createdAnn.images.length === 2,
+            "ann-media: two photos stored as an array", createdAnn.images && createdAnn.images.length);
+          assert(Array.isArray(createdAnn.videos) && createdAnn.videos.length === 1,
+            "ann-media: one video stored as an array", createdAnn.videos && createdAnn.videos.length);
+          assert(createdAnn.video === "https://example.com/live.mp4",
+            "ann-media: first video mirrored into the single video field");
+        }
+        // Editing prefills the media fields (like the news form does).
+        if (createdAnn) {
+          f.contentWindow.editAnnouncement(createdAnn.id);
+          await sleep(200);
+          var preJson = JSON.parse(gi(f, "annImagesJson").value || "[]");
+          assert(preJson.length === 2, "ann-media: edit prefills 2 stored photos", preJson.length);
+          assert($$(f, "#annImageStrip img").length === 2,
+            "ann-media: edit shows 2 thumbnails in the strip");
+          assert(gi(f, "annVideo").value === "https://example.com/live.mp4",
+            "ann-media: edit prefills the video path");
+        }
+      }
+      closeFrame(f);
+
+      // The public list sorts newest-first by createdAt, so give the test
+      // announcement a far-future createdAt to land it on the first page.
+      (function () {
+        var anns = getAnnouncements();
+        var changed = false;
+        anns.forEach(function (a) {
+          if (a.title === "ZZ Announcement Media") {
+            a.createdAt = "2099-12-20T12:00:00.000Z";
+            changed = true;
+          }
+        });
+        if (changed) localStorage.setItem("communityAnnouncements", JSON.stringify(anns));
+      })();
+
+      // Public announcements page renders the collage + video.
+      f = await loadPage("announcements.html");
+      if (assert(!!f, "ann-media: announcements page loads")) {
+        var annCard = $$(f, "#announcementsList .list-item").filter(function (c) {
+          return c.textContent.indexOf("ZZ Announcement Media") >= 0;
+        })[0];
+        if (assert(!!annCard, "ann-media: seeded announcement rendered on public page")) {
+          var annCollage = annCard.querySelector(".news-collage");
+          assert(!!annCollage && annCollage.querySelectorAll(".collage-tile").length === 2,
+            "ann-media: public page renders the 2-photo collage");
+          assert(!!annCard.querySelector("video"),
+            "ann-media: public page renders the announcement video player");
+        }
+        // Detail modal shows the same media.
+        var annBtn = annCard ? annCard.querySelector(".item-actions .btn-details") : null;
+        if (assert(!!annBtn, "ann-media: announcement detail button present")) {
+          annBtn.click();
+          await sleep(300);
+          assert(!!$(f, "#detailModal .news-collage"),
+            "ann-media: detail modal renders the photo collage");
+          assert(!!$(f, "#detailModal video"),
+            "ann-media: detail modal renders the video player");
+          esc(f);
+          await sleep(150);
+        }
+      }
+      closeFrame(f);
+
+      // The user dashboard's Announcements section is now a Facebook-style
+      // feed with infinite scroll, like Community News and Activities.
+      f = await loadPage("user-dashboard.html#announcements");
+      if (assert(!!f, "ann-media: dashboard announcements section loads")) {
+        assert(!!gi(f, "dashAnnouncementsList"), "ann-media: dashboard announcements feed container");
+        var dashCards = $$(f, "#dashAnnouncementsList .feed-card");
+        assert(dashCards.length > 0, "ann-media: dashboard renders Facebook-style announcement cards",
+          dashCards.length + " cards");
+        var dashCard = dashCards.filter(function (c) {
+          return c.textContent.indexOf("ZZ Announcement Media") >= 0;
+        })[0];
+        if (assert(!!dashCard, "ann-media: seeded announcement rendered in dashboard feed")) {
+          assert(!!dashCard.querySelector(".news-collage"),
+            "ann-media: dashboard card shows the photo collage");
+          assert(!!dashCard.querySelector("video"),
+            "ann-media: dashboard card shows the video player");
+          assert(!!dashCard.querySelector(".feed-actions .feed-action-btn"),
+            "ann-media: dashboard card has the Facebook-style action bar");
+        }
+        // Infinite scroll: more items than one page leaves a sentinel (or the
+        // end marker once everything is visible).
+        assert(!!$(f, "#dashAnnouncementsList .feed-sentinel") || !!$(f, "#dashAnnouncementsList .feed-end"),
+          "ann-media: dashboard feed has the scroll sentinel / end marker");
+      }
+      closeFrame(f);
+
+      // Cleanup the seeded announcement.
+      f = await loadPage("admin.html#announcements");
+      if (assert(!!f, "ann-media: admin loads for cleanup")) {
+        var cleanedAnn = getAnnouncements().filter(function (a) {
+          return a.title !== "ZZ Announcement Media";
+        });
+        localStorage.setItem("communityAnnouncements", JSON.stringify(cleanedAnn));
+      }
+      closeFrame(f);
+
+      // ---------- 14d. quick wins (back-to-top + deep links + Web Share) ----------
+      f = await loadPage("index.html");
+      if (assert(!!f, "home reloads for back-to-top")) {
+        var btt = gi(f, "backToTop");
+        if (assert(!!btt, "back-to-top: button injected")) {
+          assert(!btt.classList.contains("visible"), "back-to-top: hidden at top of page");
+          f.contentWindow.scrollTo(0, 600);
+          f.contentWindow.dispatchEvent(new Event("scroll")); // headless never paints, so fire it for real browsers
+          await sleep(250);
+          assert(gi(f, "backToTop").classList.contains("visible"), "back-to-top: visible after scrolling",
+            "scrollY=" + f.contentWindow.scrollY);
+        }
+      }
+      closeFrame(f);
+
+      f = await loadPage("admin.html#users");
+      if (assert(!!f, "admin deep link loads")) {
+        assert(!gi(f, "sectionUsers").classList.contains("hidden"), "deep link: admin #users section opens");
+        var galLink = $$(f, ".admin-sidebar a[data-section]").filter(function (a) {
+          return a.getAttribute("data-section") === "gallery";
+        })[0];
+        if (assert(!!galLink, "deep link: GALLERY sidebar link")) {
+          galLink.click();
+          await sleep(250);
+          assert(f.contentWindow.location.hash === "#gallery", "deep link: section click writes hash",
+            f.contentWindow.location.hash);
+        }
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html#notifications");
+      if (assert(!!f, "user deep link loads")) {
+        assert(!gi(f, "sectionDashNotifications").classList.contains("hidden"),
+          "deep link: member #notifications opens");
+      }
+      closeFrame(f);
+
+      f = await loadPage("news.html");
+      if (assert(!!f, "news page loads for detail modal test")) {
+        var detailBtn = $$(f, "#newsList .feed-title")[0];
+        if (assert(!!detailBtn, "news: feed card title opens details")) {
+          detailBtn.click();
+          await sleep(300);
+          assert(!!gi(f, "detailModal") && !!gi(f, "detailModalOk"),
+            "modal: opens with a CLOSE button");
+          assert(!gi(f, "shareNativeBtn") && !gi(f, "shareCopyBtn") &&
+            !gi(f, "shareFbBtn") && !gi(f, "shareMsgrBtn") && !gi(f, "sharePrintBtn"),
+            "modal: share / copy link / facebook / messenger / print row removed");
+          esc(f);
+          await sleep(200);
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 14e. global search page ----------
+      f = await loadPage("index.html");
+      if (assert(!!f, "home loads for nav check")) {
+        assert(!!$(f, '.main-nav a[href="search.html"]'), "nav: SEARCH link present on home");
+      }
+      closeFrame(f);
+
+      f = await loadPage("search.html");
+      if (assert(!!f, "search page loads")) {
+        assert(!!$(f, '.main-nav a[href="search.html"]'), "search: SEARCH nav link in main nav");
+        var sInput = gi(f, "globalSearch");
+        if (assert(!!sInput, "search: input exists")) {
+          assert(gi(f, "globalSearchEmptyText").textContent.indexOf("Type a keyword") >= 0,
+            "search: initial hint shown");
+          var seededNews = getNews();
+          seededNews.push({
+            id: "e2e_search1", title: "ZZUNIQUE Findable Story", category: "Community",
+            date: "2026-10-01", description: "A story written for the global search test.",
+            details: "Full details for the search test.", image: ""
+          });
+          localStorage.setItem("communityNews", JSON.stringify(seededNews));
+          setInput(sInput, "ZZUNIQUE");
+          await sleep(250);
+          var resBox = gi(f, "globalSearchResults");
+          assert(resBox.textContent.indexOf("ZZUNIQUE Findable Story") >= 0, "search: finds seeded article");
+          assert(gi(f, "globalSearchCount").textContent.indexOf("1") >= 0, "search: result count shown",
+            gi(f, "globalSearchCount").textContent);
+          assert(f.contentWindow.location.hash.indexOf("q=ZZUNIQUE") >= 0, "search: hash syncs #q=",
+            f.contentWindow.location.hash);
+          var rBtn = resBox.querySelector(".search-result");
+          if (assert(!!rBtn, "search: result button rendered")) {
+            rBtn.click();
+            await sleep(300);
+            assert(!!gi(f, "detailModal") && gi(f, "detailModal").classList.contains("open") &&
+              gi(f, "detailModal").textContent.indexOf("ZZUNIQUE Findable Story") >= 0,
+              "search: clicking result opens detail modal");
+            esc(f);
+            await sleep(150);
+          }
+          setInput(sInput, "qqzzxx99nomatch");
+          await sleep(250);
+          assert(gi(f, "globalSearchEmpty").style.display !== "none" &&
+            gi(f, "globalSearchEmptyText").textContent.indexOf("No results") >= 0,
+            "search: empty state for no matches");
+          setInput(sInput, "ZZUNIQUE");
+          await sleep(200);
+          var galleryChip = $$(f, "#globalSearchTypes .filter-btn").filter(function (b) {
+            return b.getAttribute("data-type") === "gallery";
+          })[0];
+          if (assert(!!galleryChip, "search: gallery type chip")) {
+            galleryChip.click();
+            await sleep(200);
+            assert(gi(f, "globalSearchResults").textContent.indexOf("ZZUNIQUE Findable Story") < 0,
+              "search: type chip filters out other types");
+          }
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 14f. events list / calendar view ----------
+      f = await loadPage("events.html");
+      if (assert(!!f, "events page loads for calendar")) {
+        var calBtn = $$(f, "#eventsViewToggle .filter-btn").filter(function (b) {
+          return b.getAttribute("data-view") === "calendar";
+        })[0];
+        if (assert(!!calBtn, "calendar: toggle button exists")) {
+          // Seed an event dated today so a chip is guaranteed in this month
+          var evts = getEvents();
+          var td = new Date();
+          var todayISO = td.getFullYear() + "-" + ("0" + (td.getMonth() + 1)).slice(-2) + "-" + ("0" + td.getDate()).slice(-2);
+          evts.push({
+            id: "e2e_cal1", name: "ZZ Calendar Chip Event", date: todayISO,
+            time: "10:00 AM", location: "Test Hall", description: "Chip test."
+          });
+          localStorage.setItem("communityEvents", JSON.stringify(evts));
+          calBtn.click();
+          await sleep(250);
+          assert(!gi(f, "eventsCalendar").classList.contains("hidden"), "calendar: view shows month grid");
+          assert(gi(f, "eventsList").classList.contains("hidden"), "calendar: list hidden in calendar mode");
+          var cells = gi(f, "calGrid").querySelectorAll(".cal-cell");
+          assert(cells.length >= 28 && cells.length <= 42, "calendar: month cells rendered",
+            cells.length + " cells");
+          assert(gi(f, "calTitle").textContent.length >= 4, "calendar: month title shown",
+            gi(f, "calTitle").textContent);
+          var chip = gi(f, "calGrid").querySelector(".cal-chip");
+          if (assert(!!chip, "calendar: event chip rendered")) {
+            chip.click();
+            await sleep(300);
+            assert(!!gi(f, "detailModal") && gi(f, "detailModal").classList.contains("open") &&
+              gi(f, "detailModal").textContent.indexOf("ZZ Calendar Chip Event") >= 0,
+              "calendar: chip opens event detail modal");
+            esc(f);
+            await sleep(150);
+          }
+          gi(f, "calNext").click();
+          await sleep(150);
+          assert(gi(f, "calTitle").textContent.length >= 4, "calendar: next month renders",
+            gi(f, "calTitle").textContent);
+          var listBtn = $$(f, "#eventsViewToggle .filter-btn").filter(function (b) {
+            return b.getAttribute("data-view") === "list";
+          })[0];
+          if (assert(!!listBtn, "calendar: LIST toggle button")) {
+            listBtn.click();
+            await sleep(200);
+            assert(!gi(f, "eventsList").classList.contains("hidden") &&
+              gi(f, "eventsCalendar").classList.contains("hidden"),
+              "calendar: back to list view");
+          }
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 14g. admin comments section (Facebook-style) + audit log ----------
+      f = await loadPage("admin.html");
+      if (assert(!!f, "admin reloads for comments section")) {
+        // Sidebar COMMENTS link removed; open the section via JS instead
+        f.contentWindow.showAdminSection("comments");
+        await sleep(250);
+        assert(!gi(f, "sectionComments").classList.contains("hidden"), "comments: section opens");
+        assert(f.contentWindow.location.hash === "#comments", "comments: hash syncs",
+          f.contentWindow.location.hash);
+
+          // Seed one comment on a live post and render the threads
+          var cTarget = getNews()[0];
+          var cmts = JSON.parse(localStorage.getItem("communityComments") || "[]");
+          cmts.push({ id: "e2e_c1", newsId: cTarget.id, username: "e2etest",
+                      text: "ZZTHREADVISIBLE hello there", date: new Date().toISOString() });
+          localStorage.setItem("communityComments", JSON.stringify(cmts));
+          f.contentWindow.renderAdminComments();
+          await sleep(150);
+          var threadsBox = gi(f, "adminCommentThreads");
+          assert(threadsBox.textContent.indexOf(cTarget.title) >= 0, "comments: thread shows post title");
+          assert(threadsBox.textContent.indexOf("ZZTHREADVISIBLE") >= 0, "comments: seeded comment rendered");
+          assert(threadsBox.textContent.indexOf("e2etest") >= 0, "comments: username rendered");
+
+          // Search filters threads
+          setInput(gi(f, "commentsTableSearch"), "zzthreadvisible");
+          await sleep(150);
+          assert(gi(f, "adminCommentThreads").textContent.indexOf("ZZTHREADVISIBLE") >= 0,
+            "comments: search keeps matching row");
+          setInput(gi(f, "commentsTableSearch"), "qqzz99nomatch");
+          await sleep(150);
+          assert(gi(f, "adminCommentThreads").textContent.indexOf("No matching results.") >= 0,
+            "comments: no-match message shown");
+          setInput(gi(f, "commentsTableSearch"), "");
+          await sleep(150);
+
+          // VIEW PROFILE opens the user detail modal
+          var vpBtn = $$(f, "#adminCommentThreads button").filter(function (b) {
+            return b.textContent.indexOf("VIEW PROFILE") >= 0;
+          })[0];
+          if (assert(!!vpBtn, "comments: VIEW PROFILE button exists")) {
+            vpBtn.click();
+            await sleep(300);
+            assert(!!gi(f, "detailModal") && gi(f, "detailModal").classList.contains("open") &&
+              gi(f, "detailModal").textContent.indexOf("e2etest") >= 0,
+              "comments: VIEW PROFILE opens user modal");
+            esc(f);
+            await sleep(200);
+          }
+
+          // HIDE keeps the row for admins but removes it from the public site
+          f.contentWindow.toggleCommentHidden("e2e_c1");
+          await sleep(200);
+          var hiddenRow = $$(f, "#adminCommentThreads .comment-admin-row").filter(function (r) {
+            return r.textContent.indexOf("ZZTHREADVISIBLE") >= 0;
+          })[0];
+          assert(!!hiddenRow && hiddenRow.classList.contains("comment-hidden"),
+            "comments: hidden row gets comment-hidden styling");
+          assert(!!hiddenRow && hiddenRow.textContent.indexOf("HIDDEN") >= 0, "comments: HIDDEN badge shown");
+          assert(!f.contentWindow.getComments(cTarget.id).some(function (c) { return c.id === "e2e_c1"; }),
+            "comments: hidden comment excluded from public list");
+          assert(gi(f, "auditLogList").textContent.indexOf("hid comment") >= 0,
+            "audit: hide action logged on dashboard");
+
+          // SHOW brings it back
+          f.contentWindow.toggleCommentHidden("e2e_c1");
+          await sleep(200);
+          assert(f.contentWindow.getComments(cTarget.id).some(function (c) { return c.id === "e2e_c1"; }),
+            "comments: shown comment is public again");
+
+          // DELETE asks for confirmation, then removes it
+          f.contentWindow.deleteAdminComment("e2e_c1");
+          await sleep(300);
+          var cm2 = gi(f, "confirmModal");
+          if (assert(!!cm2 && cm2.classList.contains("open"), "comments: delete confirm opens")) {
+            assert(cm2.textContent.indexOf("Are you sure you want to delete this comment?") >= 0,
+              "comments: spec delete confirm message");
+            gi(f, "confirmOkBtn").click();
+            await sleep(350);
+            assert(!JSON.parse(localStorage.getItem("communityComments") || "[]").some(function (c) {
+              return c.id === "e2e_c1";
+            }), "comments: comment removed from storage");
+            assert(gi(f, "auditLogList").textContent.indexOf("deleted comment") >= 0,
+              "audit: comment delete logged");
+          }
+          assert(!!gi(f, "auditLogList").closest(".form-box"), "audit: dashboard box present");
+        }
+      closeFrame(f);
+
+      // ---------- 14g2. news table comment badge + delete purges comments ----------
+      f = await loadPage("admin.html#news");
+      if (assert(!!f, "admin news section loads for badge test")) {
+        var bTarget = getNews()[0];
+        var bCmts = JSON.parse(localStorage.getItem("communityComments") || "[]");
+        bCmts.push({ id: "e2e_c2", newsId: bTarget.id, username: "e2etest",
+                     text: "badge count comment", date: new Date().toISOString() });
+        localStorage.setItem("communityComments", JSON.stringify(bCmts));
+        f.contentWindow.renderNewsTable();
+        await sleep(150);
+        var badge = $$(f, "#newsTableBody .comment-count-badge").filter(function (b) {
+          return b.closest("tr") && b.closest("tr").textContent.indexOf(bTarget.title) >= 0;
+        })[0];
+        if (assert(!!badge, "news table: comment count badge rendered")) {
+          assert(badge.textContent.indexOf("1") >= 0, "badge: shows comment count", badge.textContent);
+          badge.click();
+          await sleep(250);
+          assert(!gi(f, "sectionComments").classList.contains("hidden"),
+            "badge: clicking jumps to comments section");
+          assert(gi(f, "commentsTableSearch").value === bTarget.title,
+            "badge: prefills the post title search", gi(f, "commentsTableSearch").value);
+          setInput(gi(f, "commentsTableSearch"), "");
+          await sleep(150);
+          f.contentWindow.showAdminSection("news");
+          await sleep(200);
+        }
+
+        // Deleting a post must also delete the comments attached to it
+        var pNews = getNews();
+        pNews.push({ id: "e2e_pd", title: "ZZ Purge Doc", category: "Community",
+                     date: "2026-10-01", description: "purge test",
+                     details: "purge test", image: "images/news-01.jpg" });
+        localStorage.setItem("communityNews", JSON.stringify(pNews));
+        var pCmts = JSON.parse(localStorage.getItem("communityComments") || "[]");
+        pCmts.push({ id: "e2e_c3", newsId: "e2e_pd", username: "e2etest",
+                     text: "orphan comment", date: new Date().toISOString() });
+        localStorage.setItem("communityComments", JSON.stringify(pCmts));
+        f.contentWindow.renderNewsTable();
+        await sleep(150);
+        f.contentWindow.deleteNews("e2e_pd");
+        await sleep(300);
+        if (assert(!!gi(f, "confirmModal") && gi(f, "confirmModal").classList.contains("open"),
+          "purge: delete confirm opens")) {
+          gi(f, "confirmOkBtn").click();
+          await sleep(400);
+          assert(!getNews().some(function (n) { return n.id === "e2e_pd"; }),
+            "purge: news deleted");
+          assert(!JSON.parse(localStorage.getItem("communityComments") || "[]").some(function (c) {
+            return c.newsId === "e2e_pd";
+          }), "purge: comments removed with the post");
+          assert(gi(f, "auditLogList").textContent.indexOf("deleted news") >= 0,
+            "audit: news delete logged with title",
+            gi(f, "auditLogList").textContent.slice(0, 120));
+        }
+      }
+      closeFrame(f);
+
+      // ---------- 14h. data safety (migrations + import validation + reset backup) ----------
+      f = await loadPage("admin.html");
+      if (assert(!!f, "admin loads for data safety tests")) {
+        // Warm up the frame's FileReader so the first asserted read is not cold
+        await new Promise(function (res) {
+          var r = new f.contentWindow.FileReader();
+          r.onload = function () { res(); };
+          r.onerror = function () { res(); };
+          r.readAsText(new File(["warmup"], "warmup.txt"));
+        });
+
+        // Schema migration normalizes legacy comments (no "hidden" field)
+        f.contentWindow.localStorage.removeItem("communitySchemaVersion");
+        var legacy = f.contentWindow.loadComments();
+        legacy.push({ id: "e2e_legacy", newsId: "x", username: "e2etest", text: "legacy comment" });
+        f.contentWindow.setData("communityComments", legacy);
+        f.contentWindow.runMigrations();
+        var mig = f.contentWindow.loadComments().filter(function (c) { return c.id === "e2e_legacy"; })[0];
+        assert(!!mig && mig.hidden === false, "migrations: legacy comment gains hidden flag",
+          mig ? "hidden=" + mig.hidden : "missing");
+        assert(f.contentWindow.localStorage.getItem("communitySchemaVersion") === String(f.contentWindow.SCHEMA_VERSION),
+          "migrations: schema version stored");
+
+        // Valid JSON with the wrong app name is rejected without touching data
+        var beforeNews = JSON.stringify(getNews());
+        clearToasts(f);
+        var badFile = new File([JSON.stringify({ app: "Something Else", communityNews: [{ id: "hack" }] })],
+          "bad.json", { type: "application/json" });
+        f.contentWindow.importFromFile(badFile);
+        var ok1 = await toastHas(f, "not a valid Community Connect backup");
+        assert(ok1, "import: wrong-app file rejected", ok1 ? "" : "toasts: " + toastTexts(f));
+        assert(JSON.stringify(getNews()) === beforeNews, "import: storage unchanged after rejection");
+
+        // Backups from a newer schema version are refused
+        clearToasts(f);
+        var newFile = new File([JSON.stringify({ app: "Community Connect", schemaVersion: 99,
+          communityNews: [{ id: "hack2" }] })], "new.json", { type: "application/json" });
+        f.contentWindow.importFromFile(newFile);
+        assert(await toastHas(f, "newer version of the site"), "import: newer schemaVersion rejected");
+        assert(JSON.stringify(getNews()) === beforeNews, "import: storage unchanged after version refusal");
+
+        // Garbage that is not JSON at all is caught by the parser guard
+        clearToasts(f);
+        f.contentWindow.importFromFile(new File(["not json at all"], "junk.json"));
+        assert(await toastHas(f, "not a valid Community Connect backup"), "import: malformed file rejected");
+
+        // Right app, but the only data set has the wrong shape
+        clearToasts(f);
+        var shapeFile = new File([JSON.stringify({ app: "Community Connect", schemaVersion: 2,
+          communityNews: { not: "an array" } })], "shape.json", { type: "application/json" });
+        f.contentWindow.importFromFile(shapeFile);
+        assert(await toastHas(f, "no valid data sets"), "import: wrong-shape data set refused");
+
+        // Reset keeps an automatic restore point, then reloads
+        f.contentWindow.resetAllData();
+        await sleep(1800);
+        var snapRaw = localStorage.getItem("communityAutoBackup");
+        if (assert(!!snapRaw, "reset: automatic backup written")) {
+          var snap = JSON.parse(snapRaw);
+          assert(snap.app === "Community Connect" && Array.isArray(snap.communityNews),
+            "reset: snapshot is a valid backup payload");
+        }
+        assert(getNews().length > 0, "reset: sample news re-seeded after reload");
+        assert(!!localStorage.getItem("communityAuditLog") &&
+          JSON.parse(localStorage.getItem("communityAuditLog"))[0].action === "reset data",
+          "reset: audit entry survives the fresh start");
+
+        // Restore button + confirmation bring the pre-reset data back
+        f.contentWindow.restoreAutoBackup();
+        await sleep(300);
+        var rc = gi(f, "confirmModal");
+        if (assert(!!rc && rc.classList.contains("open"), "restore: confirm modal opens")) {
+          assert(rc.textContent.indexOf("Restore the automatic backup taken before the last reset?") >= 0,
+            "restore: spec confirm message");
+          gi(f, "confirmOkBtn").click();
+          await sleep(1500);
+        }
+        assert(f.contentWindow.loadComments().some(function (c) { return c.id === "e2e_legacy"; }),
+          "restore: pre-reset comments come back");
+
+        // Happy path: a valid backup imports, reports, and reloads
+        clearToasts(f);
+        var goodFile = new File([JSON.stringify({ app: "Community Connect", schemaVersion: 2,
+          communityNews: [{ id: "e2e_imp1", title: "ZZ Imported Story", category: "Community",
+            date: "2026-10-01", description: "imported", details: "imported", image: "" }] })],
+          "good.json", { type: "application/json" });
+        f.contentWindow.importFromFile(goodFile);
+        assert(await toastHas(f, "Import finished"), "import: success toast shown");
+        await sleep(1400);
+        assert(getNews().length === 1 && getNews()[0].id === "e2e_imp1",
+          "import: valid backup applied after reload",
+          getNews().length + " items");
+      }
+      closeFrame(f);
+
+      // ---------- 14i. empty-state consistency across the 5 public pages ----------
+      f = await loadPage("announcements.html#q=zzzqqq");
+      if (assert(!!f, "announcements loads for filtered empty-state")) {
+        assert(pageText(f).indexOf("No announcements found. Please try another search.") >= 0,
+          "empty: announcements shows the filtered-search message");
+      }
+      closeFrame(f);
+
+      localStorage.setItem("communityNews", "[]");
+      f = await loadPage("news.html");
+      if (assert(!!f, "news loads with an empty list")) {
+        assert(pageText(f).indexOf("No community news posted yet.") >= 0,
+          "empty: news shows the not-posted-yet message");
+        assert(pageText(f).indexOf("No news found. Please try another search.") < 0,
+          "empty: news does not show the search message when unfiltered");
+      }
+      closeFrame(f);
+
+      localStorage.setItem("communityAnnouncements", "[]");
+      f = await loadPage("announcements.html");
+      if (assert(!!f, "announcements loads with an empty list")) {
+        assert(pageText(f).indexOf("No community announcements posted yet.") >= 0,
+          "empty: announcements shows the not-posted-yet message");
+      }
+      closeFrame(f);
+
+      localStorage.setItem("communityEvents", "[]");
+      f = await loadPage("events.html");
+      if (assert(!!f, "events loads with an empty list")) {
+        assert(pageText(f).indexOf("No upcoming events right now") >= 0,
+          "empty: events message shown");
+      }
+      closeFrame(f);
+
+      localStorage.setItem("communityActivities", "[]");
+      f = await loadPage("activities.html");
+      if (assert(!!f, "activities loads with an empty list")) {
+        assert(pageText(f).indexOf("No community activities posted yet.") >= 0,
+          "empty: activities message shown");
+      }
+      closeFrame(f);
+
+      localStorage.setItem("communityGallery", "[]");
+      f = await loadPage("gallery.html");
+      if (assert(!!f, "gallery loads with an empty list")) {
+        assert(pageText(f).indexOf("No photos in the gallery yet.") >= 0,
+          "empty: gallery message shown");
+      }
+      closeFrame(f);
+
+      // Filipino spot-checks for the newest sections
+      localStorage.setItem("communityLang", "fil");
+      f = await loadPage("admin.html#comments");
+      if (assert(!!f, "admin comments loads in Filipino")) {
+        assert(pageText(f).indexOf("Pamahalaan ang mga Komento") >= 0,
+          "i18n: comments section title translated in FIL");
+        assert(pageText(f).indexOf("See who commented on each post.") < 0,
+          "i18n: comments subtitle no longer English in FIL");
+      }
+      closeFrame(f);
+
+      localStorage.setItem("communityEvents", JSON.stringify([{
+        id: "e2e_fil1", name: "FIL Calendar Event",
+        date: new Date().toISOString().slice(0, 10), time: "9:00 AM",
+        location: "Hall", description: "fil test"
+      }]));
+      f = await loadPage("events.html");
+      if (assert(!!f, "events loads in Filipino for calendar check")) {
+        var filCalBtn = $$(f, "#eventsViewToggle .filter-btn").filter(function (b) {
+          return b.getAttribute("data-view") === "calendar";
+        })[0];
+        if (assert(!!filCalBtn, "fil calendar: toggle exists")) {
+          filCalBtn.click();
+          await sleep(250);
+          var calTitleFil = gi(f, "calTitle").textContent;
+          assert(calTitleFil.indexOf("Oktubre") >= 0 || calTitleFil.indexOf("Nobyembre") >= 0 ||
+            calTitleFil.indexOf("Enero") >= 0 || calTitleFil.indexOf("Peb") >= 0 ||
+            calTitleFil.indexOf("Marso") >= 0 || calTitleFil.indexOf("Abril") >= 0 ||
+            calTitleFil.indexOf("Mayo") >= 0 || calTitleFil.indexOf("Hunyo") >= 0 ||
+            calTitleFil.indexOf("Hulyo") >= 0 || calTitleFil.indexOf("Agosto") >= 0 ||
+            calTitleFil.indexOf("Setyembre") >= 0 || calTitleFil.indexOf("Disyembre") >= 0,
+            "i18n: calendar month title in Filipino", calTitleFil);
+        }
+      }
+      closeFrame(f);
+      localStorage.setItem("communityLang", "en");
+
+      // ---------- 14e. Go Live UI presence (no camera; transport + labels) ----------
+      // Verifies the live studio/player markup exists, the dual transport
+      // (WebSocket relay + BroadcastChannel fallback) is wired, and the live
+      // labels translate in Filipino. Camera capture is not exercised here.
+      f = await loadPage("admin.html");
+      if (assert(!!f, "live: admin loads for Go Live studio")) {
+        var goLiveBtn = gi(f, "liveGoBtn");
+        if (assert(!!goLiveBtn, "live: GO LIVE button present")) {
+          assert(goLiveBtn.textContent.indexOf("GO LIVE") >= 0, "live: GO LIVE label text");
+          goLiveBtn.click();
+          await sleep(200);
+          var studio = gi(f, "liveStudio");
+          if (assert(!!studio && studio.classList.contains("open"), "live: studio modal opens")) {
+            assert(!!gi(f, "livePreview"), "live: camera preview element");
+            assert(!!gi(f, "liveEnableBtn"), "live: enable-camera button");
+            assert(!!gi(f, "liveStartBtn") && !!gi(f, "liveStopBtn"), "live: start/stop broadcast buttons");
+            assert(!!gi(f, "liveKeepRec"), "live: keep-recording checkbox");
+            assert(!!gi(f, "liveTitle") && !!gi(f, "liveCategory"), "live: title + category inputs");
+            assert(!!gi(f, "liveArchiveList"), "live: archive list container");
+          }
+          // Transport wiring: liveBus exists and exposes the dual-transport API.
+          assert(typeof f.contentWindow.liveBus === "object" && f.contentWindow.liveBus !== null,
+            "live: liveBus transport object exists");
+          assert(typeof f.contentWindow.liveBusSend === "function" &&
+            typeof f.contentWindow.liveBusSendBinary === "function" &&
+            typeof f.contentWindow.liveBusOn === "function",
+            "live: liveBus send/binary/on API present");
+          assert(typeof f.contentWindow.liveBusConnect === "function" &&
+            typeof f.contentWindow.liveRelayUrl === "function",
+            "live: WebSocket connect + relay URL helpers present");
+          var relayUrl = f.contentWindow.liveRelayUrl();
+          assert(typeof relayUrl === "string" && relayUrl.indexOf("/live") >= 0,
+            "live: relay URL targets /live endpoint", relayUrl);
+          // BroadcastChannel fallback still constructed.
+          assert(!!f.contentWindow.BroadcastChannel, "live: BroadcastChannel fallback available");
+        }
+      }
+      closeFrame(f);
+
+      // User dashboard live section (only shown while a broadcast is live).
+      f = await loadPage("user-dashboard.html");
+      if (assert(!!f, "live: user dashboard loads for live section")) {
+        assert(!!gi(f, "liveSection"), "live: live section present on dashboard");
+        assert(gi(f, "liveSection").classList.contains("hidden"),
+          "live: the live area is hidden when no broadcast is running");
+        assert(!gi(f, "liveOffline"),
+          "live: the 'No Live Broadcast' placeholder is removed");
+        assert(!!gi(f, "liveCard"), "live: live card element present");
+        assert(!!gi(f, "livePlayer"), "live: MediaSource player element");
+        // The language toggle still runs for the dashboard chrome.
+        if (typeof f.contentWindow.toggleLang === "function") {
+          f.contentWindow.toggleLang();
+          await sleep(150);
+          f.contentWindow.toggleLang();
+          await sleep(150);
+          assert(gi(f, "liveSection").classList.contains("hidden"),
+            "live: the live area stays hidden through a language toggle");
+        } else {
+          assert(false, "live: toggleLang exposed for i18n check");
+        }
+        localStorage.setItem("communityLang", "en");
+      }
+      closeFrame(f);
+
+      // ---------- 14f. mobile view (drawer, bottom tab bar, card tables) ----------
+      // The harness frames are narrow, so the mobile layout is the active one.
+      f = await loadPage("user-dashboard.html#home");
+      if (assert(!!f, "mobile: member dashboard loads")) {
+        var userToggle = gi(f, "userNavToggle");
+        if (assert(!!userToggle, "mobile: member menu button exists")) {
+          var drawer = gi(f, "userSidebar");
+          var backdrop = gi(f, "sidebarBackdrop");
+          assert(!!drawer && getComputedStyle(drawer).visibility === "hidden",
+            "mobile: member drawer starts closed");
+          assert(!!backdrop, "mobile: drawer backdrop injected");
+          userToggle.click();
+          await sleep(200);
+          assert(drawer.classList.contains("open") && backdrop.classList.contains("show"),
+            "mobile: menu button opens the drawer + backdrop");
+          assert(f.contentDocument.body.classList.contains("drawer-open"),
+            "mobile: page scroll locks while the drawer is open");
+          backdrop.click();
+          await sleep(200);
+          assert(!drawer.classList.contains("open") &&
+            !f.contentDocument.body.classList.contains("drawer-open"),
+            "mobile: tapping the backdrop closes the drawer");
+          userToggle.click();
+          await sleep(150);
+          esc(f);
+          await sleep(180);
+          assert(!drawer.classList.contains("open"), "mobile: Escape closes the drawer");
+          userToggle.click();
+          await sleep(150);
+          var drawerLink = drawer.querySelector("a[data-usection='news']");
+          if (assert(!!drawerLink, "mobile: drawer section link present")) {
+            drawerLink.click();
+            await sleep(300);
+            assert(!drawer.classList.contains("open"),
+              "mobile: choosing a section closes the drawer");
+          }
+        }
+      }
+      closeFrame(f);
+
+      // Section 14i emptied the lists, so seed one news row for the table test
+      var mobileNews = getNews();
+      mobileNews.unshift({
+        id: "e2e_mobile1", title: "ZZ Mobile Card Story", category: "Community",
+        date: "2026-10-05", description: "Seeded for the mobile card-table test.", image: ""
+      });
+      localStorage.setItem("communityNews", JSON.stringify(mobileNews));
+
+      f = await loadPage("admin.html#news");
+      if (assert(!!f, "mobile: admin dashboard loads")) {
+        var adminToggle = gi(f, "adminNavToggle");
+        var adminDrawer = gi(f, "adminSidebar");
+        assert(!!adminToggle && !!adminDrawer, "mobile: admin menu button + drawer exist");
+        assert(!!gi(f, "sidebarBackdrop"), "mobile: admin drawer backdrop injected");
+        if (adminToggle && adminDrawer) {
+          adminToggle.click();
+          await sleep(200);
+          assert(adminDrawer.classList.contains("open"), "mobile: admin menu opens the drawer");
+          gi(f, "sidebarBackdrop").click();
+          await sleep(200);
+          assert(!adminDrawer.classList.contains("open"), "mobile: admin backdrop closes the drawer");
+        }
+        // Tables switch to stacked cards on phones (labels come from data-labels)
+        assert($$(f, "#newsTableBody td[data-label]").length > 0,
+          "mobile: admin table cells carry data-labels",
+          $$(f, "#newsTableBody tr").length + " rows");
+        assert($$(f, "#newsTableBody td[data-label='']").length > 0,
+          "mobile: admin table has an unlabelled heading cell");
+      }
+      closeFrame(f);
+
+      // Remove the seeded row again
+      localStorage.setItem("communityNews", JSON.stringify(
+        getNews().filter(function (n) { return n.id !== "e2e_mobile1"; })));
+
+      f = await loadPage("index.html");
+      if (assert(!!f, "mobile: home loads for the bottom tab bar")) {
+        var bottomNav = gi(f, "bottomNav");
+        if (assert(!!bottomNav, "mobile: bottom tab bar injected on public pages")) {
+          var bItems = $$(f, "#bottomNav .bottom-nav-item");
+          assert(bItems.length === 5, "mobile: bottom bar has 4 tabs + MENU", bItems.length + " items");
+          assert($$(f, "#bottomNav a.active").length === 1,
+            "mobile: exactly one tab is marked active");
+          assert(f.contentDocument.body.classList.contains("has-bottom-nav"),
+            "mobile: body reserves space for the bottom bar");
+          var menuBtn = gi(f, "bottomNavMenu");
+          if (assert(!!menuBtn, "mobile: MENU button present")) {
+            menuBtn.click();
+            await sleep(180);
+            assert(gi(f, "mainNav").classList.contains("open"),
+              "mobile: MENU opens the site navigation");
+            esc(f);
+            await sleep(180);
+            assert(!gi(f, "mainNav").classList.contains("open"),
+              "mobile: Escape closes the site navigation");
+          }
+        }
+      }
+      closeFrame(f);
+
+      f = await loadPage("news.html");
+      if (assert(!!f, "mobile: news page loads")) {
+        var newsTab = $$(f, "#bottomNav a.active")[0];
+        assert(!!newsTab && newsTab.getAttribute("href") === "news.html",
+          "mobile: NEWS tab is active on the news page",
+          newsTab ? newsTab.getAttribute("href") : "(none)");
+      }
+      closeFrame(f);
+
+      // Bottom bar labels follow the selected language
+      localStorage.setItem("communityLang", "fil");
+      f = await loadPage("index.html");
+      if (assert(!!f, "mobile: home loads in Filipino")) {
+        var homeLabel = $$(f, "#bottomNav a span")[0];
+        assert(!!homeLabel && homeLabel.textContent === "Tahanan",
+          "mobile: bottom bar label translated (HOME -> Tahanan)",
+          homeLabel ? homeLabel.textContent : "(none)");
+      }
+      closeFrame(f);
+      localStorage.setItem("communityLang", "en");
+
+      // ---------- 14g. engagement: comments + likes on announcements/activities,
+      // RSVP headcount tracker, and the emergency hotlines page ----------
+      // Earlier sections emptied these lists, so seed fresh content first.
+      localStorage.setItem("communityAnnouncements", JSON.stringify([{
+        id: "e2e_eng_ann", title: "ZZ Engagement Announcement", category: "Community",
+        date: "2026-10-06", status: "Notice",
+        description: "Seeded for the engagement tests.", images: [], videos: []
+      }]));
+      localStorage.setItem("communityActivities", JSON.stringify([{
+        id: "e2e_eng_act", name: "ZZ Engagement Activity", date: "2026-10-07",
+        location: "Plaza", description: "Seeded activity.", images: [], videos: []
+      }]));
+      localStorage.setItem("communityEvents", JSON.stringify([{
+        id: "e2e_eng_ev", name: "ZZ Engagement Event", date: "2099-12-31",
+        time: "9:00 AM", location: "Covered Court", description: "Seeded event."
+      }]));
+      localStorage.setItem("communityRsvps", JSON.stringify([
+        { username: "e2etest", eventId: "e2e_eng_ev", date: "2026-10-06" },
+        { username: "anothermember", eventId: "e2e_eng_ev", date: "2026-10-06" }
+      ]));
+      localStorage.setItem("userLoggedIn", "true");
+      localStorage.setItem("currentUsername", "e2etest");
+
+      f = await loadPage("user-dashboard.html#announcements");
+      if (assert(!!f, "engage: member announcements feed loads")) {
+        var annFeedCard = $$(f, "#dashAnnouncementsList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Engagement Announcement") >= 0;
+        })[0];
+        if (assert(!!annFeedCard, "engage: announcement feed card rendered")) {
+          var annLikeBtn = annFeedCard.querySelector(".feed-action-btn[data-like-news]");
+          if (assert(!!annLikeBtn, "engage: announcement has a Like button")) {
+            var beforeLikes = JSON.parse(localStorage.getItem("communityNewsLikes") || "{}")["e2e_eng_ann"] || 0;
+            annLikeBtn.click();
+            await sleep(250);
+            var afterLikes = JSON.parse(localStorage.getItem("communityNewsLikes") || "{}")["e2e_eng_ann"] || 0;
+            assert(afterLikes === beforeLikes + 1,
+              "engage: liking an announcement increments the count", beforeLikes + " -> " + afterLikes);
+            assert($$(f, "#dashAnnouncementsList .feed-action-btn[data-like-news].liked").length === 1,
+              "engage: the Like button shows the liked state");
+          }
+          var annTitle = annFeedCard.querySelector(".feed-title");
+          if (assert(!!annTitle, "engage: announcement title opens details")) {
+            annTitle.click();
+            await sleep(350);
+            if (assert(!!gi(f, "commentsBox"), "engage: announcement details show the comments box")) {
+              assert(!!gi(f, "commentInput"), "engage: comment form shown when logged in");
+              setInput(gi(f, "commentInput"), "Nice announcement!");
+              var annForm = f.contentDocument.querySelector("#commentsBox .comment-form");
+              if (assert(!!annForm, "engage: announcement comment form present")) {
+                annForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                await sleep(350);
+                var annComment = JSON.parse(localStorage.getItem("communityComments") || "[]")
+                  .filter(function (c) { return c.newsId === "e2e_eng_ann"; })[0];
+                assert(!!annComment && annComment.postType === "announcement",
+                  "engage: announcement comment stored with postType=announcement",
+                  annComment ? annComment.postType : "none");
+                assert(!!$(f, "#commentsList") &&
+                  $(f, "#commentsList").textContent.indexOf("Nice announcement!") >= 0,
+                  "engage: posted comment appears in the thread");
+                var annCount = $(f, '#dashAnnouncementsList [data-comment-count="e2e_eng_ann"]');
+                assert(!!annCount && annCount.textContent.indexOf("1") === 0,
+                  "engage: announcement comment counter updates", annCount ? annCount.textContent : "(none)");
+              }
+            }
+            esc(f);
+            await sleep(200);
+          }
+        }
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html#activities");
+      if (assert(!!f, "engage: member activities feed loads")) {
+        var actFeedCard = $$(f, "#dashActivitiesList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Engagement Activity") >= 0;
+        })[0];
+        if (assert(!!actFeedCard, "engage: activity feed card rendered")) {
+          var actDetailBtn = $$(f, "#dashActivitiesList .feed-action-btn").filter(function (b) {
+            return b.textContent.indexOf("Details") >= 0;
+          })[0];
+          if (assert(!!actDetailBtn, "engage: activity Details button present")) {
+            actDetailBtn.click();
+            await sleep(350);
+            if (assert(!!gi(f, "commentsBox"), "engage: activity details show the comments box")) {
+              setInput(gi(f, "commentInput"), "Looks fun!");
+              var actForm = f.contentDocument.querySelector("#commentsBox .comment-form");
+              if (assert(!!actForm, "engage: activity comment form present")) {
+                actForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                await sleep(350);
+                var actComment = JSON.parse(localStorage.getItem("communityComments") || "[]")
+                  .filter(function (c) { return c.newsId === "e2e_eng_act"; })[0];
+                assert(!!actComment && actComment.postType === "activity",
+                  "engage: activity comment stored with postType=activity",
+                  actComment ? actComment.postType : "none");
+              }
+            }
+            esc(f);
+            await sleep(200);
+          }
+        }
+      }
+      closeFrame(f);
+
+      // The admin moderation panel groups every post kind together
+      f = await loadPage("admin.html#comments");
+      if (assert(!!f, "engage: admin comments panel loads")) {
+        var threads = $$(f, "#adminCommentThreads .comment-post-card");
+        var annThread = threads.filter(function (t2) {
+          return t2.textContent.indexOf("ZZ Engagement Announcement") >= 0;
+        })[0];
+        var actThread = threads.filter(function (t2) {
+          return t2.textContent.indexOf("ZZ Engagement Activity") >= 0;
+        })[0];
+        assert(!!annThread, "engage: admin sees the announcement thread");
+        assert(!!actThread, "engage: admin sees the activity thread");
+        assert(!!annThread && annThread.textContent.indexOf("ANNOUNCEMENT") >= 0,
+          "engage: announcement thread labelled with its type");
+        assert(!!actThread && actThread.textContent.indexOf("ACTIVITY") >= 0,
+          "engage: activity thread labelled with its type");
+      }
+      closeFrame(f);
+
+      // RSVP headcount tracker in the admin events section
+      f = await loadPage("admin.html#events");
+      if (assert(!!f, "engage: admin events panel loads")) {
+        var goingBtn = f.contentDocument.querySelector("#eventTableBody .badge-going");
+        if (assert(!!goingBtn, "engage: events table shows a Going chip")) {
+          assert(goingBtn.textContent.indexOf("2") >= 0,
+            "engage: going chip shows the RSVP headcount", goingBtn.textContent);
+          goingBtn.click();
+          await sleep(350);
+          var attendeeList = $(f, "#detailModal .attendee-list");
+          assert(!!attendeeList, "engage: attendee list modal opens");
+          assert(!!attendeeList && attendeeList.textContent.indexOf("anothermember") >= 0,
+            "engage: attendee list names the residents who confirmed");
+          esc(f);
+          await sleep(200);
+        }
+        var rsvpSummary = gi(f, "rsvpSummaryBody");
+        assert(!!rsvpSummary && rsvpSummary.textContent.indexOf("Total RSVPs") >= 0,
+          "engage: RSVP summary reports the headcount",
+          rsvpSummary ? rsvpSummary.textContent : "(none)");
+      }
+      closeFrame(f);
+
+      // Emergency hotlines directory page
+      f = await loadPage("hotlines.html");
+      if (assert(!!f, "hotlines: page loads")) {
+        var hotlineCards = $$(f, "#hotlinesList .hotline-card");
+        assert(hotlineCards.length === 5, "hotlines: five service cards rendered",
+          hotlineCards.length + " cards");
+        assert($$(f, "#hotlinesList a[href^='tel:']").length >= 5,
+          "hotlines: every card has a quick-dial tel: link");
+        assert($$(f, "#hotlinesList [data-copy-number]").length >= 5,
+          "hotlines: every card has a copy-number button");
+        assert(!!$(f, ".main-nav a[href='hotlines.html']"),
+          "hotlines: linked from the main navigation");
+        assert(pageText(f).indexOf("911") >= 0, "hotlines: the 911 callout is present");
+      }
+      closeFrame(f);
+
+      localStorage.setItem("communityLang", "fil");
+      f = await loadPage("hotlines.html");
+      if (assert(!!f, "hotlines: page loads in Filipino")) {
+        assert(pageText(f).indexOf("Mga Emergency Hotline") >= 0,
+          "hotlines: page heading translated");
+        assert(pageText(f).indexOf("TAWAGAN NGAYON") >= 0,
+          "hotlines: call buttons translated");
+      }
+      closeFrame(f);
+      localStorage.setItem("communityLang", "en");
+
+      // Guests (no account) can comment and react too
+      localStorage.setItem("userLoggedIn", "false");
+      localStorage.removeItem("currentUsername");
+      localStorage.setItem("communityNews", JSON.stringify([{
+        id: "e2e_guest_news", title: "ZZ Guest Story", category: "Community",
+        date: "2026-10-08", description: "Seeded for guest engagement.", image: ""
+      }]));
+      localStorage.setItem("communityComments", "[]");
+      localStorage.setItem("communityGuestLikes", "[]");
+      localStorage.setItem("communityNewsLikes", "{}");
+      localStorage.setItem("communityNewsUserLikes", "{}");
+
+      f = await loadPage("news.html");
+      if (assert(!!f, "engage: news loads as a guest")) {
+        var guestCard = $$(f, "#newsList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Guest Story") >= 0;
+        })[0];
+        if (assert(!!guestCard, "engage: guest sees the seeded story")) {
+          var guestLike = guestCard.querySelector(".feed-action-btn[data-like-news]");
+          if (assert(!!guestLike, "engage: guest gets a Like button")) {
+            guestLike.click();
+            await sleep(250);
+            var guestLikes = JSON.parse(localStorage.getItem("communityGuestLikes") || "[]");
+            assert(guestLikes.indexOf("e2e_guest_news") >= 0,
+              "engage: guest like recorded without an account");
+            assert($$(f, "#newsList .feed-action-btn[data-like-news].liked").length === 1,
+              "engage: guest sees the liked state");
+          }
+          var guestTitle = guestCard.querySelector(".feed-title");
+          if (assert(!!guestTitle, "engage: guest can open details")) {
+            guestTitle.click();
+            await sleep(350);
+            var guestForm = $(f, "#commentsBox .comment-form-guest");
+            if (assert(!!guestForm, "engage: guest comment form is shown")) {
+              setInput(gi(f, "guestName"), "Visitor One");
+              setInput(gi(f, "commentInput"), "Hello from a guest!");
+              guestForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+              await sleep(350);
+              var guestComment = JSON.parse(localStorage.getItem("communityComments") || "[]")
+                .filter(function (c) { return c.newsId === "e2e_guest_news"; })[0];
+              assert(!!guestComment && guestComment.guest === true &&
+                guestComment.username === "Visitor One",
+                "engage: guest comment stored with the display name",
+                guestComment ? guestComment.username : "none");
+              assert(!!$(f, "#commentsList") &&
+                $(f, "#commentsList").textContent.indexOf("Hello from a guest!") >= 0,
+                "engage: guest comment appears in the thread");
+            }
+            esc(f);
+            await sleep(200);
+          }
+        }
+      }
+      closeFrame(f);
+
+      // Admin moderation labels guest comments
+      f = await loadPage("admin.html#comments");
+      if (assert(!!f, "engage: admin loads for guest comment moderation")) {
+        assert(pageText(f).indexOf("Visitor One") >= 0, "engage: guest comment visible to admins");
+        assert(pageText(f).indexOf("GUEST") >= 0, "engage: guest comment carries a GUEST badge");
+      }
+      closeFrame(f);
+
+      // Feed reading order: author header, title + caption, then the media
+      localStorage.setItem("communityNews", JSON.stringify([{
+        id: "e2e_order_news", title: "ZZ Order Story", category: "Community",
+        date: "2026-10-09", description: "Caption above the image.",
+        image: "images/Community-Garden.webp", images: ["images/Community-Garden.webp"]
+      }]));
+      f = await loadPage("news.html");
+      if (assert(!!f, "feed order: news page loads")) {
+        var orderCard = $(f, "#newsList .feed-card");
+        if (assert(!!orderCard, "feed order: feed card present")) {
+          var orderKids = Array.prototype.map.call(orderCard.children, function (el) {
+            return (el.className || "").split(" ")[0] || el.tagName.toLowerCase();
+          });
+          var bodyIdx = orderKids.indexOf("feed-body");
+          var mediaIdx = orderKids.indexOf("feed-image-wrap");
+          assert(bodyIdx >= 0 && mediaIdx === bodyIdx + 1,
+            "feed order: title + caption sit above the photo", orderKids.join(" > "));
+          var orderTitle = orderCard.querySelector(".feed-title");
+          var orderImg = orderCard.querySelector(".feed-image");
+          if (assert(!!orderTitle && !!orderImg, "feed order: title and photo both present")) {
+            assert((orderTitle.compareDocumentPosition(orderImg) & 4) !== 0,
+              "feed order: the title precedes the photo in the DOM");
+          }
+        }
+      }
+      closeFrame(f);
+
+      // Clean up the engagement fixtures
+      localStorage.setItem("communityAnnouncements", "[]");
+      localStorage.setItem("communityActivities", "[]");
+      localStorage.setItem("communityEvents", "[]");
+      localStorage.setItem("communityRsvps", "[]");
+      localStorage.setItem("communityComments", "[]");
+      localStorage.setItem("communityNewsLikes", "{}");
+      localStorage.setItem("communityNewsUserLikes", "{}");
+
+      // ---------- 14h. profile pictures + display names ----------
+      var tinyAvatar = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+      localStorage.setItem("communityUsers", JSON.stringify([
+        { id: "u_prof", username: "profileuser", name: "Profile User", password: "x",
+          phone: "0917-000-0000", address: "Purok 1", avatar: tinyAvatar, joined: "2026-01-05" }
+      ]));
+      localStorage.setItem("userLoggedIn", "true");
+      localStorage.setItem("currentUsername", "profileuser");
+      localStorage.setItem("communityAdminProfile", JSON.stringify({
+        name: "Kapitan Juan", title: "Barangay Administrator", phone: "(02) 8123-4567",
+        email: "office@email.com", avatar: tinyAvatar
+      }));
+      localStorage.setItem("communityNews", JSON.stringify([{
+        id: "n_prof", title: "ZZ Profile Story", category: "Community", date: "2026-10-13",
+        description: "Posted by the admin profile.", image: "images/Community-Garden.webp",
+        postedBy: "Kapitan Juan", createdAt: "2026-10-13T08:00:00Z"
+      }]));
+      localStorage.setItem("communityComments", JSON.stringify([{
+        id: "c_prof", newsId: "n_prof", postType: "news", username: "profileuser",
+        text: "Nice one!", date: "2026-10-13T09:00:00Z"
+      }]));
+      localStorage.setItem("communityNewsLikes", "{}");
+      localStorage.setItem("communityGuestLikes", "[]");
+
+      f = await loadPage("user-dashboard.html#profile");
+      if (assert(!!f, "profile: member profile section loads")) {
+        assert(!!gi(f, "profileAvatarFile") && !!gi(f, "profileAvatarPreview"),
+          "profile: avatar picker present");
+        assert(!!gi(f, "profileAvatarRemove"), "profile: remove-photo button present");
+        assert(!!gi(f, "profileDisplayName"), "profile: display-name field present");
+        assert(!!$(f, "#profileAvatarPreview img.avatar-photo"),
+          "profile: saved photo shows in the picker preview");
+        assert(gi(f, "profileDisplayName").value === "Profile User",
+          "profile: display name prefilled", gi(f, "profileDisplayName").value);
+        // Circular close/back button at the top of the card
+        var profClose = gi(f, "profileCloseBtn");
+        assert(!!profClose, "profile: a circular X close button is present");
+        if (profClose) {
+          var closeStyle = f.contentWindow.getComputedStyle(profClose);
+          assert(closeStyle.borderRadius === "50%" || parseInt(closeStyle.borderRadius, 10) >= 16,
+            "profile: the close button is circular", closeStyle.borderRadius);
+          assert(closeStyle.display.indexOf("flex") >= 0,
+            "profile: the X is centered with flex", closeStyle.display);
+          assert(!!profClose.querySelector("svg"), "profile: the button contains an X icon");
+        }
+
+        // Upload a fresh photo through the real picker (canvas -> File -> change)
+        var avatarBlob = await (async function () {
+          var cv = f.contentDocument.createElement("canvas");
+          cv.width = 80; cv.height = 40;
+          cv.getContext("2d").fillStyle = "#e67e22";
+          cv.getContext("2d").fillRect(0, 0, 80, 40);
+          var url = cv.toDataURL("image/png");
+          return await f.contentWindow.fetch(url).then(function (r) { return r.blob(); });
+        })();
+        var avatarFile = new f.contentWindow.File([avatarBlob], "avatar.png", { type: "image/png" });
+        var dt = new f.contentWindow.DataTransfer();
+        dt.items.add(avatarFile);
+        var avatarInput = gi(f, "profileAvatarFile");
+        avatarInput.files = dt.files;
+        avatarInput.dispatchEvent(new f.contentWindow.Event("change", { bubbles: true }));
+        await sleep(900);
+        assert(!!$(f, "#profileAvatarPreview img.avatar-photo"),
+          "profile: picker previews the chosen photo");
+
+        setInput(gi(f, "profileDisplayName"), "Remil Santos");
+        fireSubmit(f, "profileForm");
+        await sleep(500);
+        var savedMember = getUsers().filter(function (u) { return u.username === "profileuser"; })[0];
+        assert(!!savedMember && savedMember.name === "Remil Santos",
+          "profile: display name saved to the account",
+          savedMember ? savedMember.name : "(none)");
+        assert(!!savedMember && String(savedMember.avatar).indexOf("data:image/jpeg") === 0,
+          "profile: photo saved as a square JPEG data URL",
+          savedMember ? String(savedMember.avatar).slice(0, 24) : "(none)");
+
+        assert(gi(f, "profileSuccess").classList.contains("show"),
+          "profile: success message shown after saving");
+        assert(gi(f, "profileSuccess").textContent.indexOf("saved successfully") >= 0,
+          "profile: success message says it was saved successfully",
+          gi(f, "profileSuccess").textContent.trim());
+
+        // The close button acts as back -> overview
+        if (profClose) {
+          var homeBefore = gi(f, "sectionDashHome").classList.contains("hidden");
+          profClose.click();
+          await sleep(150);
+          assert(homeBefore && !gi(f, "sectionDashHome").classList.contains("hidden"),
+            "profile: the close button returns to the home overview");
+          assert(gi(f, "sectionDashProfile").classList.contains("hidden"),
+            "profile: the profile section is closed");
+        }
+      }
+      closeFrame(f);
+
+      f = await loadPage("user-dashboard.html#home");
+      if (assert(!!f, "profile: member dashboard loads")) {
+        assert(!!$(f, "#dashHeaderAvatar img.avatar-photo"),
+          "profile: member photo shown in the dashboard header");
+        assert(!gi(f, "sidebarAvatar"),
+          "profile: sidebar account block stays removed");
+        assert(gi(f, "dashHeaderName").textContent === "Remil Santos",
+          "profile: member display name shown in the header",
+          gi(f, "dashHeaderName").textContent);
+        assert(!gi(f, "sidebarName"),
+          "profile: sidebar account name stays removed");
+      }
+      closeFrame(f);
+
+      f = await loadPage("admin.html#profile");
+      if (assert(!!f, "profile: admin profile section loads")) {
+        assert(!!gi(f, "adminProfileForm"), "profile: admin profile form present");
+        assert(gi(f, "adminProfileName").value === "Kapitan Juan",
+          "profile: admin display name prefilled", gi(f, "adminProfileName").value);
+        assert(gi(f, "adminProfileTitle").value === "Barangay Administrator",
+          "profile: admin title prefilled");
+        assert(!!$(f, "#adminAvatarPreview img.avatar-photo"),
+          "profile: admin photo shows in the picker preview");
+        assert(!!$(f, "#adminHeaderAvatar img.avatar-photo"),
+          "profile: admin photo shown in the admin header");
+        assert(gi(f, "adminHeaderName").textContent === "Kapitan Juan",
+          "profile: admin name shown in the admin header", gi(f, "adminHeaderName").textContent);
+        assert(!gi(f, "adminSidebarAvatar"),
+          "profile: admin sidebar account block stays removed");
+
+        setInput(gi(f, "adminProfileTitle"), "Punong Barangay");
+        fireSubmit(f, "adminProfileForm");
+        await sleep(400);
+        var adminProfile = JSON.parse(localStorage.getItem("communityAdminProfile") || "{}");
+        assert(adminProfile.title === "Punong Barangay",
+          "profile: admin personal info saved", adminProfile.title);
+        assert(!gi(f, "adminSidebarMeta"),
+          "profile: admin sidebar account meta stays removed");
+
+        assert(gi(f, "adminProfileSuccess").classList.contains("show"),
+          "profile: admin success message shown after saving");
+        assert(gi(f, "adminProfileSuccess").textContent.indexOf("saved successfully") >= 0,
+          "profile: admin success message wording");
+
+        var adminClose = gi(f, "adminProfileCloseBtn");
+        assert(!!adminClose, "profile: admin has a circular X close button");
+        if (adminClose) {
+          var adminCloseStyle = f.contentWindow.getComputedStyle(adminClose);
+          assert(adminCloseStyle.display.indexOf("flex") >= 0,
+            "profile: admin close button centers the X", adminCloseStyle.display);
+          adminClose.click();
+          await sleep(150);
+          assert(!gi(f, "sectionDashboard").classList.contains("hidden"),
+            "profile: admin close button returns to the dashboard");
+          assert(gi(f, "sectionProfile").classList.contains("hidden"),
+            "profile: admin profile section is closed");
+        }
+      }
+      closeFrame(f);
+
+      f = await loadPage("news.html");
+      if (assert(!!f, "profile: news page loads for author checks")) {
+        var profCard = $$(f, "#newsList .feed-card").filter(function (c) {
+          return c.textContent.indexOf("ZZ Profile Story") >= 0;
+        })[0];
+        if (assert(!!profCard, "profile: seeded post rendered in the feed")) {
+          assert(!!profCard.querySelector(".feed-avatar img.avatar-photo"),
+            "profile: post shows the author's photo beside it");
+          assert(profCard.querySelector(".feed-author").textContent === "Kapitan Juan",
+            "profile: post shows the author's name",
+            profCard.querySelector(".feed-author").textContent);
+        }
+        var profTitle = profCard ? profCard.querySelector(".feed-title") : null;
+        if (assert(!!profTitle, "profile: post opens the details popup")) {
+          profTitle.click();
+          await sleep(400);
+          assert(!!$(f, "#commentsList .comment-avatar img.avatar-photo"),
+            "profile: comment shows the member's photo");
+          assert($(f, "#commentsList .comment-head strong").textContent === "Remil Santos",
+            "profile: comment shows the member's display name",
+            $(f, "#commentsList .comment-head strong").textContent);
+          esc(f);
+          await sleep(200);
+        }
+      }
+      closeFrame(f);
+
+      // Admin moderation + users table pick up the photo and display name
+      f = await loadPage("admin.html#comments");
+      if (assert(!!f, "profile: admin comments load")) {
+        assert(!!$(f, "#adminCommentThreads .comment-avatar img.avatar-photo"),
+          "profile: moderation shows the commenter's photo");
+        assert(pageText(f).indexOf("Remil Santos") >= 0,
+          "profile: moderation shows the commenter's display name");
+      }
+      closeFrame(f);
+
+      f = await loadPage("admin.html#users");
+      if (assert(!!f, "profile: admin users table loads")) {
+        assert(!!$(f, "#usersTableBody .comment-avatar img.avatar-photo"),
+          "profile: users table shows the member's photo");
+        assert(pageText(f).indexOf("Remil Santos") >= 0 && pageText(f).indexOf("@profileuser") >= 0,
+          "profile: users table shows display name + username");
+      }
+      closeFrame(f);
+
+      // Clean up the profile fixtures
+      localStorage.setItem("communityUsers", "[]");
+      localStorage.setItem("communityAdminProfile", "{}");
+      localStorage.setItem("communityComments", "[]");
+      localStorage.setItem("communityNews", "[]");
+
+      // ---------- 14i. admin notification centre (real actions only) ----------
+      localStorage.setItem("communityNotifications", "[]");
+      localStorage.setItem("communityNotificationPrefs", "{}");
+      localStorage.setItem("adminLoggedIn", "true");
+      localStorage.setItem("communityNews", JSON.stringify([{
+        id: "n_notif", title: "ZZ Notify Story", category: "Community", date: "2026-10-14",
+        description: "Seeded for the notification tests.", image: "", postedBy: "Kapitan Juan",
+        createdAt: "2026-10-14T08:00:00Z"
+      }]));
+      localStorage.setItem("communityActivities", "[]");
+      localStorage.setItem("communityRsvps", "[]");
+      localStorage.setItem("communityEvents", JSON.stringify([{
+        id: "ev_notif", name: "ZZ Notify Event", date: "2099-12-31", time: "9:00 AM",
+        location: "Plaza", description: "Seeded event."
+      }]));
+      localStorage.setItem("communityBookmarks", "[]");
+      localStorage.setItem("communityNewsLikes", "{}");
+      localStorage.setItem("communityNewsUserLikes", "{}");
+      localStorage.setItem("communityGuestLikes", "[]");
+      localStorage.setItem("communityUsers", JSON.stringify([
+        { id: "u_prof", username: "profileuser", name: "Remil Santos", password: "x" }
+      ]));
+      localStorage.setItem("userLoggedIn", "true");
+      localStorage.setItem("currentUsername", "profileuser");
+
+      // A clean slate shows nothing - proof that nothing is invented
+      f = await loadPage("admin.html");
+      if (assert(!!f, "notif: admin loads with a clean slate")) {
+        var cleanDot = gi(f, "adminNotifDot");
+        assert(!!cleanDot && cleanDot.hidden, "notif: bell badge hidden when there is no activity");
+        gi(f, "adminNotifBtn").click();
+        await sleep(250);
+        assert($$(f, "#adminNotifList .notif-item").length === 0,
+          "notif: no notifications are invented on a clean slate");
+        esc(f);
+        await sleep(150);
+      }
+      closeFrame(f);
+
+      // Real like, comment, share, and save by a signed-in member
+      f = await loadPage("news.html");
+      if (assert(!!f, "notif: news page loads for real actions")) {
+        var realLike = $(f, "#newsList .feed-action-btn[data-like-news]");
+        if (assert(!!realLike, "notif: like button present")) {
+          realLike.click();
+          await sleep(300);
+          var likeRec = JSON.parse(localStorage.getItem("communityNotifications") || "[]")
+            .filter(function (n) { return n.type === "like"; })[0];
+          assert(!!likeRec, "notif: liking a post records a notification");
+          assert(!!likeRec && likeRec.actor === "profileuser", "notif: the liker is recorded",
+            likeRec ? likeRec.actor : "(none)");
+          assert(!!likeRec && likeRec.targetId === "n_notif" && likeRec.targetTitle === "ZZ Notify Story",
+            "notif: the liked post is recorded");
+        }
+
+        var realTitle = $(f, "#newsList .feed-title");
+        if (assert(!!realTitle, "notif: post opens for the comment test")) {
+          realTitle.click();
+          await sleep(350);
+          setInput(gi(f, "commentInput"), "Salamat sa update!");
+          f.contentDocument.querySelector("#commentsBox .comment-form")
+            .dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+          await sleep(350);
+          var commentRec = JSON.parse(localStorage.getItem("communityNotifications") || "[]")
+            .filter(function (n) { return n.type === "comment"; })[0];
+          assert(!!commentRec && commentRec.text === "Salamat sa update!",
+            "notif: the comment text is captured", commentRec ? commentRec.text : "(none)");
+          esc(f);
+          await sleep(250);
+        }
+
+        var realShare = $$(f, "#newsList .feed-action-btn").filter(function (b) {
+          return b.textContent.indexOf("Share") >= 0;
+        })[0];
+        if (assert(!!realShare, "notif: share button present")) {
+          realShare.click();
+          await sleep(300);
+          assert(JSON.parse(localStorage.getItem("communityNotifications") || "[]")
+            .some(function (n) { return n.type === "share"; }),
+            "notif: sharing a post records a notification");
+        }
+
+        var realSave = $(f, "#newsList .feed-action-btn[data-save-news]");
+        if (assert(!!realSave, "notif: save button present")) {
+          realSave.click();
+          await sleep(300);
+          assert(JSON.parse(localStorage.getItem("communityNotifications") || "[]")
+            .some(function (n) { return n.type === "save"; }),
+            "notif: saving a post records a notification");
+        }
+      }
+      closeFrame(f);
+
+      // Real RSVP
+      f = await loadPage("events.html");
+      if (assert(!!f, "notif: events page loads")) {
+        var realRsvp = $(f, "[data-rsvp]");
+        if (assert(!!realRsvp, "notif: RSVP button present")) {
+          realRsvp.click();
+          await sleep(300);
+          var rsvpRec = JSON.parse(localStorage.getItem("communityNotifications") || "[]")
+            .filter(function (n) { return n.type === "rsvp"; })[0];
+          assert(!!rsvpRec && rsvpRec.targetId === "ev_notif",
+            "notif: RSVP records a notification with the event",
+            rsvpRec ? rsvpRec.targetId : "(none)");
+        }
+      }
+      closeFrame(f);
+
+      // Bell badge, history, click-through, mark-all, and settings
+      f = await loadPage("admin.html#notifications");
+      if (assert(!!f, "notif: admin notification section loads")) {
+        var notifTotal = JSON.parse(localStorage.getItem("communityNotifications") || "[]").length;
+        assert(notifTotal >= 5, "notif: every real action was recorded", notifTotal + " records");
+
+        var historyItems = $$(f, "#notifHistoryList .notif-item");
+        assert(historyItems.length === notifTotal, "notif: history lists every notification",
+          historyItems.length + "/" + notifTotal);
+        assert(gi(f, "notifHistoryCount").textContent.indexOf(String(notifTotal)) === 0,
+          "notif: history count shown", gi(f, "notifHistoryCount").textContent);
+
+        var unreadChip = $$(f, "#notifFilters .filter-btn").filter(function (b) {
+          return b.getAttribute("data-filter") === "unread";
+        })[0];
+        if (assert(!!unreadChip, "notif: unread filter chip present")) {
+          unreadChip.click();
+          await sleep(200);
+          assert($$(f, "#notifHistoryList .notif-item").length === notifTotal,
+            "notif: unread filter keeps the fresh items");
+          $$(f, "#notifFilters .filter-btn")[0].click();
+          await sleep(150);
+        }
+
+        var bellDot = gi(f, "adminNotifDot");
+        assert(!!bellDot && !bellDot.hidden && bellDot.textContent === String(notifTotal),
+          "notif: bell badge shows the unread count", bellDot ? bellDot.textContent : "(none)");
+
+        // Compare the avatar/action/time fields rendered in a row
+        var sampleRow = $$(f, "#notifHistoryList .notif-item")[0];
+        assert(!!sampleRow.querySelector(".notif-avatar"), "notif: rows show the actor's avatar");
+        assert(!!sampleRow.querySelector(".notif-line"), "notif: rows show the action sentence");
+        assert(!!sampleRow.querySelector(".notif-time"), "notif: rows show the relative time");
+        assert(!!sampleRow.querySelector(".notif-chip"), "notif: rows show the activity type");
+
+        var storyItem = $$(f, "#notifHistoryList .notif-item").filter(function (it) {
+          return it.textContent.indexOf("ZZ Notify Story") >= 0;
+        })[0];
+        if (assert(!!storyItem, "notif: the related post is named on the row")) {
+          storyItem.click();
+          await sleep(450);
+          assert(!!$(f, "#detailModal.open"), "notif: clicking a notification opens its post");
+          assert($(f, "#detailModal").textContent.indexOf("ZZ Notify Story") >= 0,
+            "notif: the correct post was opened");
+          esc(f);
+          await sleep(250);
+        }
+
+        gi(f, "notifMarkAllBtn").click();
+        await sleep(300);
+        var stillUnread = JSON.parse(localStorage.getItem("communityNotifications") || "[]")
+          .filter(function (n) { return !n.read; }).length;
+        assert(stillUnread === 0, "notif: MARK ALL AS READ clears every unread flag", stillUnread + " left");
+        assert(gi(f, "adminNotifDot").hidden, "notif: badge hides when nothing is unread");
+      }
+      closeFrame(f);
+
+      // Persistence across a reload
+      f = await loadPage("admin.html#notifications");
+      if (assert(!!f, "notif: admin reloads")) {
+        var persistedNotifs = JSON.parse(localStorage.getItem("communityNotifications") || "[]").length;
+        assert($$(f, "#notifHistoryList .notif-item").length === persistedNotifs,
+          "notif: history persists after a reload", persistedNotifs + " stored");
+      }
+      closeFrame(f);
+
+      // Clean up the notification fixtures
+      localStorage.setItem("communityNotifications", "[]");
+      localStorage.setItem("communityNotificationPrefs", "{}");
+      localStorage.setItem("communityNews", "[]");
+      localStorage.setItem("communityEvents", "[]");
+      localStorage.setItem("communityBookmarks", "[]");
+      localStorage.setItem("communityRsvps", "[]");
+      localStorage.setItem("communityNewsLikes", "{}");
+      localStorage.setItem("communityNewsUserLikes", "{}");
+      localStorage.setItem("communityUsers", "[]");
+
+      // ---------- 14b. barangay officials + certificate services ----------
+      // Fresh slate for officials + certificates, plus seed content to read.
+      localStorage.setItem("barangayOfficials", "[]");
+      localStorage.setItem("certificateRequests", "[]");
+      localStorage.setItem("communityOfficialNotifications", "[]");
+      localStorage.setItem("communityNews", JSON.stringify([{
+        id: "off_news", title: "ZZ Official News", category: "Health",
+        date: "2026-10-10", description: "News the officials should be able to read.",
+        image: "images/news-01.jpg"
+      }]));
+      localStorage.setItem("communityAnnouncements", JSON.stringify([{
+        id: "off_ann", title: "ZZ Official Announcement", category: "General",
+        date: "2026-10-11", description: "Announcement the officials should read.",
+        status: "Active"
+      }]));
+      localStorage.setItem("adminLoggedIn", "true");
+
+      // Admin adds + manages a Barangay Official (inside Manage Users)
+      f = await loadPage("admin.html#users");
+      if (assert(!!f, "official: admin dashboard loads")) {
+        var manageSection = gi(f, "sectionUsers");
+        assert(!!manageSection && !manageSection.classList.contains("hidden"),
+          "official: MANAGE USERS section is the active admin section");
+        assert(!!gi(f, "officialForm") && manageSection.contains(gi(f, "officialForm")),
+          "official: the create-official form lives in Manage Users");
+        assert(!!gi(f, "usersTableBody") && manageSection.contains(gi(f, "usersTableBody")),
+          "official: the registered-users list sits below in Manage Users");
+        var usersLink = $$(f, ".admin-sidebar a[data-section]").filter(function (a) {
+          return a.getAttribute("data-section") === "users";
+        })[0];
+        assert(!!usersLink && usersLink.textContent.indexOf("MANAGE USERS") >= 0,
+          "official: sidebar item is labelled MANAGE USERS");
+
+        // The add-official form is hidden behind a button until it is clicked
+        var offToggle = gi(f, "officialToggleBtn");
+        assert(!!offToggle, "official: an ADD OFFICIAL button is shown before the form");
+        assert(gi(f, "officialFormBox").classList.contains("hidden"),
+          "official: the add-official form starts hidden");
+        assert(!!gi(f, "officialBackBtn"), "official: a BACK button exists inside the form");
+        if (offToggle) {
+          offToggle.click();
+          await sleep(150);
+          assert(!gi(f, "officialFormBox").classList.contains("hidden"),
+            "official: clicking the button reveals the add-official form");
+          assert(offToggle.classList.contains("hidden"),
+            "official: the button hides once the form is open");
+          assert(offToggle.getAttribute("aria-expanded") === "true",
+            "official: the button reflects its expanded state");
+          assert(gi(f, "officialBackBtn") && gi(f, "officialFormBox").contains(gi(f, "officialBackBtn")),
+            "official: BACK sits inside the form");
+          gi(f, "officialBackBtn").click();
+          await sleep(150);
+          assert(gi(f, "officialFormBox").classList.contains("hidden"),
+            "official: clicking BACK closes the form again");
+          assert(!offToggle.classList.contains("hidden"),
+            "official: the ADD OFFICIAL button returns after BACK");
+          offToggle.click();
+          await sleep(150);
+        }
+        assert(!gi(f, "officialPosition"),
+          "official: the role/position dropdown is gone (only officials are added)");
+        assert(!!gi(f, "officialBarangay"),
+          "official: a Barangay field is available to the admin");
+        setInput(gi(f, "officialName"), "ZZ Kagawad Reyes");
+        setInput(gi(f, "officialBarangay"), "Barangay San Roque");
+        setInput(gi(f, "officialUsername"), "zzofficial");
+        setInput(gi(f, "officialPassword"), "official123");
+        setInput(gi(f, "officialEmail"), "zz@barangay.gov.ph");
+        setInput(gi(f, "officialPhone"), "0917-111-2222");
+        fireSubmit(f, "officialForm");
+        await sleep(400);
+        var createdOfficial = getOfficials().filter(function (o) { return o.username === "zzofficial"; })[0];
+        assert(!!createdOfficial, "official: admin can add a Barangay Official");
+        assert(createdOfficial && createdOfficial.password !== "official123",
+          "official: password is stored hashed, never plain");
+        assert(createdOfficial && createdOfficial.barangay === "Barangay San Roque",
+          "official: the entered barangay is stored",
+          createdOfficial ? createdOfficial.barangay : "");
+        assert(createdOfficial && createdOfficial.position === "Barangay Official",
+          "official: the account is always a Barangay Official");
+        var offRowText = gi(f, "officialsTableBody") ? gi(f, "officialsTableBody").textContent : "";
+        assert(offRowText.indexOf("ZZ Kagawad Reyes") >= 0, "official: appears in the admin officials table");
+        assert(offRowText.indexOf("Barangay San Roque") >= 0, "official: the barangay shows in the table");
+        assert(!!gi(f, "officialsTableSearch"), "official: officials table has a search box");
+
+        if (createdOfficial) {
+          f.contentWindow.toggleOfficialActive(createdOfficial.id);
+          await sleep(200);
+          var afterToggle = getOfficials().filter(function (o) { return o.id === createdOfficial.id; })[0];
+          assert(afterToggle && afterToggle.active === false, "official: admin can deactivate an official");
+          f.contentWindow.toggleOfficialActive(createdOfficial.id);
+          await sleep(200);
+          afterToggle = getOfficials().filter(function (o) { return o.id === createdOfficial.id; })[0];
+          assert(afterToggle && afterToggle.active !== false, "official: admin can reactivate an official");
+        }
+      }
+      closeFrame(f);
+
+      // Resident files a certificate request
+      localStorage.setItem("communityUsers", JSON.stringify([{
+        id: "zzresident", username: "zzresident", name: "ZZ Resident",
+        password: "x", phone: "0917-333-4444", address: "Purok 1", joined: "2026-10-01"
+      }]));
+      localStorage.setItem("userLoggedIn", "true");
+      localStorage.setItem("currentUsername", "zzresident");
+      localStorage.setItem("officialLoggedIn", "false");
+
+      f = await loadPage("user-dashboard.html#certificates");
+      if (assert(!!f, "certificate: resident dashboard loads")) {
+        var certSection = gi(f, "sectionDashCertificates");
+        assert(!!certSection && !certSection.classList.contains("hidden"),
+          "certificate: REQUEST CERTIFICATE section is active");
+
+        // Searchable barangay picker on the request page
+        var brgySearch = gi(f, "certBarangaySearch");
+        assert(!!brgySearch && !!gi(f, "certBarangayList"),
+          "certificate: a searchable barangay field is on the request page");
+        // Only admin-created barangays (from official accounts) are listed
+        setInput(brgySearch, "Barangay 1");
+        await sleep(150);
+        var hardcoded = $$(f, "#certBarangayList .combo-option").filter(function (o) {
+          return o.getAttribute("data-value") === "Barangay 1";
+        });
+        assert(hardcoded.length === 0,
+          "certificate: barangays the admin has not created are NOT listed");
+        setInput(brgySearch, "San Roque");
+        await sleep(150);
+        var brgyOpts = $$(f, "#certBarangayList .combo-option");
+        assert(brgyOpts.length >= 1, "certificate: typing filters the barangay list",
+          brgyOpts.length + " options");
+        var matchesPicked = false;
+        brgyOpts.forEach(function (o) {
+          if (o.getAttribute("data-value") === "Barangay San Roque") matchesPicked = true;
+        });
+        assert(matchesPicked, "certificate: the typed barangay is offered");
+        if (matchesPicked) {
+          brgyOpts.filter(function (o) {
+            return o.getAttribute("data-value") === "Barangay San Roque";
+          })[0].dispatchEvent(new f.contentWindow.MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+        }
+        await sleep(150);
+        assert(gi(f, "certBarangay").value === "Barangay San Roque",
+          "certificate: selecting sets the barangay value", gi(f, "certBarangay").value);
+
+        setInput(gi(f, "certType"), "indigency");
+        setInput(gi(f, "certPurpose"), "For medical assistance");
+        setInput(gi(f, "certAge"), "30");
+        setInput(gi(f, "certAddress"), "Purok 1, Barangay Central");
+        setInput(gi(f, "certContact"), "0917-333-4444");
+        fireSubmit(f, "certificateForm");
+        await sleep(400);
+        var myReqs = getCertRequests();
+        assert(myReqs.length === 1, "certificate: resident request stored", myReqs.length + " stored");
+        var reqRef = myReqs.length ? myReqs[0].ref : "";
+        assert(/^CC-/.test(reqRef), "certificate: a reference number is generated", reqRef);
+        assert(myReqs.length && myReqs[0].status === "pending", "certificate: new request starts pending");
+        assert(myReqs.length && myReqs[0].barangay === "Barangay San Roque",
+          "certificate: the request is tagged with the selected barangay");
+        assert(gi(f, "myRequestsTableBody") && gi(f, "myRequestsTableBody").textContent.indexOf(reqRef) >= 0,
+          "certificate: request appears in My Certificate Requests");
+      }
+      closeFrame(f);
+
+      // The submission automatically notifies the Barangay Officials
+      var autoNotifs = getOfficialNotifs();
+      assert(autoNotifs.length === 1, "certificate: submission notifies the Barangay Officials",
+        autoNotifs.length + " notifications");
+      assert(autoNotifs.length && autoNotifs[0].type === "certificate",
+        "certificate: notification is a certificate alert");
+      assert(autoNotifs.length && autoNotifs[0].barangay === "Barangay San Roque",
+        "certificate: the notification is addressed to the chosen barangay");
+      var reqId = getCertRequests().length ? getCertRequests()[0].id : "";
+
+      // A request + notification for a DIFFERENT barangay must not reach this official
+      var otherReqs = getCertRequests();
+      otherReqs.unshift({
+        id: "zz_other_brgy", ref: "CC-2026-99999", username: "zzresident", name: "ZZ Resident",
+        barangay: "Barangay 2", type: "clearance", purpose: "Other barangay", details: {},
+        status: "pending", date: "2026-10-12T00:00:00.000Z", updated: "2026-10-12T00:00:00.000Z",
+        printedBy: "", printedDate: ""
+      });
+      localStorage.setItem("certificateRequests", JSON.stringify(otherReqs));
+
+      var otherNotifs = getOfficialNotifs();
+      otherNotifs.unshift({
+        id: "zz_other_notif", type: "certificate", requestId: "zz_other_brgy", actor: "zzresident",
+        actorName: "ZZ Resident", ref: "CC-2026-99999", certType: "clearance", barangay: "Barangay 2",
+        text: "Other barangay", date: "2026-10-12T00:00:00.000Z", read: false
+      });
+      localStorage.setItem("communityOfficialNotifications", JSON.stringify(otherNotifs));
+
+      // Shared login form: an official signs in and is redirected to the official dashboard
+      localStorage.setItem("userLoggedIn", "false");
+      localStorage.removeItem("currentUsername");
+      f = await loadPage("user-login.html");
+      if (assert(!!f, "shared login: login page loads")) {
+        setInput(gi(f, "userUsername"), "zzofficial");
+        setInput(gi(f, "userPassword"), "wrongpass");
+        fireSubmit(f, "userLoginForm");
+        await sleep(300);
+        assert(localStorage.getItem("officialLoggedIn") !== "true",
+          "shared login: official rejected on a wrong password");
+
+        setInput(gi(f, "userUsername"), "zzofficial");
+        setInput(gi(f, "userPassword"), "official123");
+        fireSubmit(f, "userLoginForm");
+        var offOk = false;
+        for (var to = 0; to < 25; to++) {
+          await sleep(150);
+          if (localStorage.getItem("officialLoggedIn") === "true") { offOk = true; break; }
+        }
+        assert(offOk, "shared login: official credentials accepted on the same form");
+        assert(localStorage.getItem("userLoggedIn") !== "true",
+          "shared login: resident session cleared when an official signs in");
+        assert(!localStorage.getItem("currentUsername"), "shared login: resident username cleared");
+        await sleep(400);
+        assert(String(f.contentWindow.location.href).indexOf("official-dashboard.html") >= 0,
+          "shared login: official redirected to the official dashboard",
+          String(f.contentWindow.location.href).split("/").pop());
+      }
+      closeFrame(f);
+
+      // Official dashboard: stats, requests, review + print, news, announcements, notifications
+      f = await loadPage("official-dashboard.html#requests");
+      if (assert(!!f, "official dashboard loads")) {
+        assert(gi(f, "officialHeaderName") && gi(f, "officialHeaderName").textContent.indexOf("ZZ Kagawad Reyes") >= 0,
+          "official: header shows the signed-in official");
+        assert(!gi(f, "dashSettingsBtn"), "official: the separate header Settings gear is removed");
+        assert(!!gi(f, "themeToggleBtnDash") && !!gi(f, "themeToggleBtnDash").querySelector("svg"),
+          "official: the theme button shows a moon/sun icon");
+
+        gi(f, "officialAccountBtn").click();
+        await sleep(120);
+        assert(!!gi(f, "officialAccountProfile") && !!gi(f, "officialAccountSettings") && !!gi(f, "officialAccountLogout"),
+          "account: official menu lists My Profile, Settings, Sign Out");
+        assert(gi(f, "officialMenuName").textContent.indexOf("ZZ Kagawad Reyes") >= 0,
+          "account: official menu shows the official's name");
+        gi(f, "officialAccountProfile").click();
+        await sleep(150);
+        assert(!gi(f, "sectionOffProfile").classList.contains("hidden"),
+          "account: official My Profile opens the profile section");
+        f.contentWindow.showOfficialSection("dashboard");
+        await sleep(100);
+        assert(gi(f, "statOffPending") && gi(f, "statOffPending").textContent === "1",
+          "official: pending stats reflect only this barangay's request",
+          gi(f, "statOffPending") ? gi(f, "statOffPending").textContent : "");
+        assert(gi(f, "requestsTableBody") && gi(f, "requestsTableBody").textContent.indexOf(reqRef) >= 0,
+          "official: request listed in the requests table");
+        assert(gi(f, "requestsTableBody") && gi(f, "requestsTableBody").textContent.indexOf("CC-2026-99999") < 0,
+          "official: a request for another barangay is NOT listed");
+        assert(gi(f, "offRecentRequests") && gi(f, "offRecentRequests").textContent.indexOf(reqRef) >= 0,
+          "official: request shown in Recent Certificate Requests");
+
+        if (reqId) {
+          f.contentWindow.openCertRequestDetail(reqId, true);
+          await sleep(250);
+          assert(!!$(f, "#detailModal.open"), "official: review dialog opens for a request");
+          assert(!!gi(f, "certPrintBtn"), "official: PRINT CERTIFICATE button is available");
+          assert(!!gi(f, "certReadyBtn"), "official: pending request can be marked ready");
+          f.contentWindow.markCertRequestReady(reqId);
+          await sleep(250);
+          var readyReq = getCertRequests().filter(function (r) { return r.id === reqId; })[0];
+          assert(readyReq && readyReq.status === "ready", "official: request marked ready for pickup");
+        }
+
+        // Facebook-style community content, identical to what residents see
+        assert(gi(f, "dashNewsList") && gi(f, "dashNewsList").textContent.indexOf("ZZ Official News") >= 0,
+          "official: Facebook-style news feed shows admin news");
+        assert(gi(f, "dashAnnouncementsList") && gi(f, "dashAnnouncementsList").textContent.indexOf("ZZ Official Announcement") >= 0,
+          "official: Facebook-style announcements feed shows admin posts");
+        assert(!!$(f, "#dashNewsList .feed-card"), "official: news renders as Facebook-style feed cards");
+        assert(!!$(f, "#dashNewsList .feed-actions button[data-like-news]"), "official: feed cards have a Like button");
+        assert(!!$(f, "#dashNewsList .feed-actions button[data-save-news]"), "official: feed cards have a Save button");
+        assert(!!$(f, "#dashAnnouncementsList .feed-card"), "official: announcements render as feed cards");
+
+        // Only the missing sections were added (Events, Activities, Gallery)
+        var offNav = $$(f, "#officialSidebar a[data-osection]").map(function (a) {
+          return a.getAttribute("data-osection");
+        });
+        assert(offNav.indexOf("events") >= 0, "official: sidebar adds UPCOMING EVENTS");
+        assert(offNav.indexOf("activities") >= 0, "official: sidebar adds ACTIVITIES");
+        assert(offNav.indexOf("gallery") >= 0, "official: sidebar adds GALLERY");
+        assert(!!gi(f, "sectionOffEvents") && !!gi(f, "dashEventsList"),
+          "official: Upcoming Events section exists");
+        assert(!!gi(f, "sectionOffActivities") && !!gi(f, "dashActivitiesList"),
+          "official: Activities section exists");
+        assert(!!gi(f, "sectionOffGallery") && !!gi(f, "dashGalleryGrid"),
+          "official: Gallery section exists");
+
+        // Interactions work for officials (they act as an official identity)
+        var offLike = $(f, "#dashNewsList button[data-like-news='off_news']");
+        if (assert(!!offLike, "official: can interact with a post (Like button)")) {
+          offLike.click();
+          await sleep(200);
+          var offLikes = JSON.parse(localStorage.getItem("communityNewsLikes") || "{}");
+          assert((offLikes.off_news || 0) >= 1, "official: liking a post increments the count",
+            String(offLikes.off_news || 0));
+        }
+
+        // The added sections open from the sidebar
+        f.contentWindow.showOfficialSection("gallery");
+        await sleep(150);
+        assert(!gi(f, "sectionOffGallery").classList.contains("hidden"),
+          "official: Gallery section opens");
+        var galleryNav = $$(f, "#officialSidebar a[data-osection='gallery']").length;
+        assert(galleryNav === 1, "official: gallery nav item is not duplicated", galleryNav + " links");
+        f.contentWindow.showOfficialSection("requests");
+        await sleep(100);
+
+        var offDot = gi(f, "officialNotifDot");
+        assert(!!offDot && !offDot.hidden, "official: notification bell shows an unread alert");
+        assert(offDot.textContent === "1",
+          "official: the bell counts only this barangay's alert",
+          offDot ? offDot.textContent : "");
+        gi(f, "officialNotifBtn").click();
+        await sleep(250);
+        var offPanel = gi(f, "officialNotifPanel");
+        assert(offPanel && !offPanel.classList.contains("hidden"), "official: notification panel opens");
+        assert(offPanel && offPanel.textContent.indexOf(reqRef) >= 0,
+          "official: certificate notification names the request");
+        assert(offPanel && offPanel.textContent.indexOf("CC-2026-99999") < 0,
+          "official: a notification for another barangay is NOT shown");
+        await sleep(150);
+        var notifsAfterOpen = getOfficialNotifs();
+        var otherN = notifsAfterOpen.filter(function (n) { return n.id === "zz_other_notif"; })[0];
+        assert(otherN && otherN.read === false,
+          "official: another barangay's alert stays unread (no cross-barangay leak)");
+        var mineN = notifsAfterOpen.filter(function (n) { return n.requestId === reqId; })[0];
+        assert(mineN && mineN.read === true,
+          "official: this barangay's alert is marked read");
+
+        assert(!!gi(f, "sectionOffProfile"), "official: MY PROFILE section exists");
+        f.contentWindow.showOfficialSection("profile");
+        await sleep(150);
+        assert(!gi(f, "sectionOffProfile").classList.contains("hidden"),
+          "official: profile section becomes active");
+        assert(gi(f, "offProfileName") && gi(f, "offProfileName").value === "ZZ Kagawad Reyes",
+          "official: profile form is prefilled with the official's name");
+        assert(gi(f, "offProfileBarangay") && gi(f, "offProfileBarangay").value === "Barangay San Roque",
+          "official: profile shows the barangay the official belongs to");
+        setInput(gi(f, "offProfileName"), "ZZ Kagawad Reyes Jr");
+        setInput(gi(f, "offProfilePhone"), "0917-555-6666");
+        fireSubmit(f, "officialProfileForm");
+        await sleep(300);
+        var updatedOfficial = getOfficials().filter(function (o) { return o.username === "zzofficial"; })[0];
+        assert(updatedOfficial && updatedOfficial.name === "ZZ Kagawad Reyes Jr",
+          "official: profile changes are saved");
+        assert(updatedOfficial && updatedOfficial.phone === "0917-555-6666",
+          "official: profile contact details are saved");
+
+        assert(gi(f, "offProfileSuccess").classList.contains("show"),
+          "official: success message shown after saving");
+        assert(gi(f, "offProfileSuccess").textContent.indexOf("saved successfully") >= 0,
+          "official: success message wording");
+
+        var offProfClose = gi(f, "offProfileCloseBtn");
+        assert(!!offProfClose, "official: profile has a circular X close button");
+        if (offProfClose) {
+          offProfClose.click();
+          await sleep(150);
+          assert(!gi(f, "sectionOffDashboard").classList.contains("hidden"),
+            "official: the close button returns to the dashboard");
+        }
+      }
+      closeFrame(f);
+
+      // Clean up the officials + certificate fixtures
+      localStorage.setItem("barangayOfficials", "[]");
+      localStorage.setItem("certificateRequests", "[]");
+      localStorage.setItem("communityOfficialNotifications", "[]");
+      localStorage.setItem("communityNews", "[]");
+      localStorage.setItem("communityAnnouncements", "[]");
+      localStorage.setItem("communityUsers", "[]");
+      localStorage.setItem("userLoggedIn", "false");
+      localStorage.setItem("officialLoggedIn", "false");
+      localStorage.removeItem("currentUsername");
+      localStorage.removeItem("currentOfficial");
+
+      // ---------- 15. offline fallback page ----------
+      f = await loadPage("offline.html");
+      if (assert(!!f, "offline.html loads")) {
+        assert(pageText(f).indexOf("You are offline") >= 0, "offline: fallback message present");
+        assert(!!gi(f, "retryBtn"), "offline: retry button");
+      }
+      closeFrame(f);
+
+      finish();
+    }
+
+    run().catch(function (err) {
+      record("runner crashed: " + (err && err.message ? err.message : err), false,
+        err && err.stack ? String(err.stack).split("\n").slice(0, 3).join(" @ ") : "");
+      finish();
+    });
+  })();
+  </script>
+</body>
+</html>

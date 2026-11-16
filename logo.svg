@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Community Connect - News and Announcements">
+  <title>Community Connect - News and Announcements</title>
+
+  <defs>
+    <clipPath id="ccBadgeClip"><circle cx="32" cy="28" r="27"/></clipPath>
+  </defs>
+
+  <!-- Badge -->
+  <circle cx="32" cy="28" r="27" fill="#1b6ed6"/>
+  <circle cx="32" cy="28" r="27" fill="none" stroke="#0f4c9a" stroke-width="2.2"/>
+  <circle cx="32" cy="28" r="23.4" fill="none" stroke="#5aa0ec" stroke-width="1" opacity="0.75"/>
+
+  <g clip-path="url(#ccBadgeClip)">
+    <!-- Skyline + greenery -->
+    <g fill="#0d4a94">
+      <rect x="5" y="33" width="5" height="14" rx="0.7"/>
+      <rect x="11" y="28" width="6" height="19" rx="0.7"/>
+      <rect x="48" y="30" width="5" height="17" rx="0.7"/>
+      <rect x="54" y="34" width="5" height="13" rx="0.7"/>
+    </g>
+    <g fill="#2f9e44">
+      <circle cx="9" cy="44" r="4.2"/>
+      <circle cx="54" cy="43" r="4.6"/>
+    </g>
+
+    <!-- Announcement rays -->
+    <g stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.95">
+      <line x1="32" y1="3.5" x2="32" y2="7"/>
+      <line x1="25.6" y1="5.4" x2="27.4" y2="8.3"/>
+      <line x1="38.4" y1="5.4" x2="36.6" y2="8.3"/>
+    </g>
+
+    <!-- People -->
+    <g fill="#ffffff">
+      <circle cx="32" cy="12.6" r="3.3"/>
+      <path d="M26.3 23.4c0-3.2 2.6-5.8 5.7-5.8s5.7 2.6 5.7 5.8z"/>
+      <circle cx="23.6" cy="16.4" r="2.5"/>
+      <path d="M19.7 24.4c0-2.6 1.8-4.6 3.9-4.6s3.9 2 3.9 4.6z"/>
+      <circle cx="40.4" cy="16.4" r="2.5"/>
+      <path d="M36.5 24.4c0-2.6 1.8-4.6 3.9-4.6s3.9 2 3.9 4.6z"/>
+    </g>
+
+    <!-- News card -->
+    <g transform="rotate(-8 26 31)">
+      <rect x="12.5" y="20" width="27" height="22" rx="2.2" fill="#ffffff" stroke="#cfe0f2" stroke-width="0.7"/>
+      <rect x="15" y="22.2" width="22" height="5.4" rx="1.1" fill="#1b6ed6"/>
+      <text x="26" y="26.6" font-family="Arial, Helvetica, sans-serif" font-size="4.4" font-weight="700" fill="#ffffff" text-anchor="middle">NEWS</text>
+      <rect x="15" y="29.4" width="9" height="7" rx="0.9" fill="#cfe6fb"/>
+      <circle cx="19.3" cy="32" r="1.4" fill="#f7c948"/>
+      <path d="M15 36.4l3-3.2 2.4 2.4 2.6-2.2v3z" fill="#1b6ed6"/>
+      <g fill="#1b6ed6">
+        <rect x="26.2" y="29.4" width="11.3" height="1.5" rx="0.75"/>
+        <rect x="26.2" y="32.2" width="11.3" height="1.5" rx="0.75"/>
+        <rect x="26.2" y="35" width="7.6" height="1.5" rx="0.75"/>
+      </g>
+      <rect x="15" y="38.4" width="22" height="1.5" rx="0.75" fill="#1b6ed6"/>
+    </g>
+
+    <!-- Megaphone -->
+    <g>
+      <path d="M35 30.6l12.4-6.2v15.4L35 33.6z" fill="#ffffff" stroke="#0f4c9a" stroke-width="0.9" stroke-linejoin="round"/>
+      <rect x="31.4" y="29.6" width="4.6" height="7.6" rx="1.5" fill="#eef3f9" stroke="#0f4c9a" stroke-width="0.9"/>
+      <rect x="36.4" y="36.6" width="3" height="4.6" rx="1.2" fill="#1b6ed6"/>
+      <circle cx="49.4" cy="32.8" r="4.4" fill="#f7c948" stroke="#dfa300" stroke-width="1"/>
+      <circle cx="49.4" cy="32.8" r="1.8" fill="#ffd96a"/>
+      <g fill="#ffd54d">
+        <path d="M54.4 25.6l4.2-3.2 1 4.4z"/>
+        <path d="M55.4 32.8h4.9l-2.1 3.1z"/>
+        <path d="M54.4 40l4.2 3.2 1-4.4z"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Ribbons -->
+  <rect x="3" y="41.6" width="58" height="9.6" rx="3.4" fill="#123a78"/>
+  <text x="32" y="48.6" font-family="Arial, Helvetica, sans-serif" font-size="7" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="0.3">COMMUNITY</text>
+
+  <rect x="2" y="50.6" width="60" height="8.6" rx="3" fill="#f7c948"/>
+  <text x="32" y="56.7" font-family="Arial, Helvetica, sans-serif" font-size="3.5" font-weight="700" fill="#123a78" text-anchor="middle" letter-spacing="0.15">NEWS &amp; ANNOUNCEMENTS</text>
+</svg>

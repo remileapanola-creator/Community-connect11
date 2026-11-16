@@ -18,14 +18,11 @@ var CORE_FILES = [
   "search.html",
   "register.html",
   "user-login.html",
-  "admin-login.html",
-  "user-dashboard.html",
-  "official-dashboard.html",
-  "offline.html",
+ "admin-login.html",
   "css/style.css",
-  "js/script.js",
-  "manifest.json",
-  "images/login-bg.jpg"
+  "images/Community Plaza.jpg",
+  "images/Health Center Visit.jpg",
+  "images/logo.svg"
 ];
 
 self.addEventListener("install", function (event) {
